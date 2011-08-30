@@ -22,4 +22,4 @@
 
 -spec parse_transform(Forms, options()) -> Forms when Forms :: forms().
 parse_transform(Forms, _Options) ->
-	Forms.
+	check_call:main(Forms,Options).
