@@ -21,5 +21,5 @@
 -type options() :: [{atom(), any()}].
 
 -spec parse_transform(Forms, options()) -> Forms when Forms :: forms().
-parse_transform(Forms, _Options) ->
-	check_call:main(Forms,Options).
+parse_transform(Forms, Options) ->
+	sheriff_check_call:main(Forms,Options).
