@@ -20,22 +20,15 @@
 -type forms() :: [form()].
 -type options() :: [{atom(), any()}].
 
-%% @doc Module and operator of the call function to replace.
--define(MOD, sheriff).
--define(OPE, check).
-%% @doc Prefix of the generate function.
--define(PREF, "is_").
-
 
 %% @doc Function to call.
 %% 
-%% Search in the tree and replace call function ?MOD:?OPE by the appropriate
+%% Search in the tree and replace call function sheriff:check by the appropriate
 %% call.
 -spec main(forms(), options()) -> forms().
 main(Forms, Options) ->
 	{NewForms,_} =
 		parse_trans:depth_first(fun replace/4, [], Forms, Options),
-	io:format("~p~n",[parse_trans:revert(NewForms)]),
 	parse_trans:revert(NewForms).
 
 %% @doc Return a tuple with the new tree
@@ -45,7 +38,7 @@ main(Forms, Options) ->
 replace(application, Form, _Ctxt, Acc) ->
 	MFA = erl_syntax_lib:analyze_application(Form),
 	case MFA of
-		{?MOD, {?OPE, 2}} ->
+		{sheriff, {check, 2}} ->
 			Args = erl_syntax:application_arguments(Form),
 			RevArgs = parse_trans:revert(Args),
 			Pos = erl_syntax:get_pos(Form),
@@ -59,34 +52,65 @@ replace(application, Form, _Ctxt, Acc) ->
 replace(_, Form, _Ctxt, Acc) ->
 	{Form, Acc}.
 
-%% @doc Build an Erlang tree of a call of the generate function.
+%% @doc Build an Erlang tree of a call to the generate function.
 -spec build(form(), form(), integer()) -> form().
 build(Operator, Var, PosCall) ->
 	case erl_syntax:type(Operator) of
 		application ->
-			Pos = erl_syntax:get_pos(Operator),
+			%%Pos = erl_syntax:get_pos(Operator),
 			Op = erl_syntax:application_operator(Operator),
 			Args = erl_syntax:application_arguments(Operator),
-			OpType = erl_syntax:type(Op),
-			if OpType == module_qualifier ->
-				Mod = erl_syntax:module_qualifier_argument(Op),
-				Body = erl_syntax:module_qualifier_body(Op),
-				FunName = erl_syntax:atom(?PREF ++ erl_syntax:atom_name(Body));
-			true ->
-				Mod = none,
-				FunName = erl_syntax:atom(?PREF ++ erl_syntax:atom_name(Op))
-			end,
-			NewOp = hd(parse_trans:revert([erl_syntax:set_pos(FunName,Pos)])),
+			{Mod,FunName} = get_new_name(Op),
+			NewOp = build_atom(FunName),
 			if Args == [] ->
-				erl_syntax:set_pos(erl_syntax:application(Mod,NewOp, [Var]),PosCall);
+				NewArgs = [Var];
 			true ->
-				NewArg = hd(parse_trans:revert([erl_syntax:string(erl_prettypr:format(Operator))])),
-				erl_syntax:set_pos(erl_syntax:application(Mod,NewOp, [Var,NewArg]),PosCall)
-				%% @todo with Hamza version.
-				%% NewArg = make_ast(erl_prettypr:format(Operator)),
-				%% erl_syntax:set_pos(erl_syntax:application(Mod,NewOp, [Var|NewArg]),PosCall)
-			end;
+				NewArgs = [Var|make_ast(erl_prettypr:format(Operator))]
+			end,
+			build_call(Mod,NewOp,NewArgs,PosCall);
 		_ ->
-			%% @todo handle error when the 2nd argument is not a call.
+			%% @todo Manage errors when the 2nd argument is not a call.
 			Operator
 	end.
+
+%% @doc Return the module and the name of the new call
+-spec get_new_name(form()) -> tuple().
+get_new_name(Operator) ->
+	Type = erl_syntax:type(Operator),
+	if Type == module_qualifier ->
+		Mod = erl_syntax:module_qualifier_argument(Operator),
+		Body = erl_syntax:module_qualifier_body(Operator),
+		Name= "sheriff_$_" ++ erl_syntax:atom_name(Body);
+	true ->
+		Mod = none,
+		Name= "sheriff_$_" ++ erl_syntax:atom_name(Operator)
+	end,
+	{Mod,Name}.
+
+%% @doc Build an atom Erlang tree
+-spec build_atom(string()) -> form().
+build_atom(Name) ->
+	hd(parse_trans:revert([erl_syntax:atom(Name)])).
+
+%% @doc Build a call in Erlang tree and set his position
+-spec build_call(none|form(),form(),forms(),integer()) -> form().
+build_call(Module,Operator,ArgsList,Pos) ->
+	erl_syntax:set_pos(erl_syntax:application(Module,Operator, ArgsList),Pos).
+
+%% @doc Build a list Erlang tree
+-spec make_ast(string()) -> form().
+make_ast(A)->
+    Full_type=lists:append(["-type sheriff()::",A,"."]),
+    {_,Tokens,_}=erl_scan:string(Full_type),
+    {_,Ast}=erl_parse:parse_form(Tokens),
+    send_ast(Ast).
+
+%% @doc Return an Erlang tree
+-spec send_ast(form()) -> list().
+send_ast({attribute,_,type,{sheriff,{type,_,_Type_name,List},[]}})->
+    %%lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end, List );
+	parse_trans:revert(List);
+send_ast({attribute,_,type,{sheriff,{remote_type,_,
+		[{atom,_,_Type_module},{atom,_,_Type_name},List ]},[]}})->
+    %%lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end, List ).
+	parse_trans:revert(List).
