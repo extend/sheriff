@@ -3,7 +3,7 @@
 
 -type type_definition_ast()::tuple().
 
--spec find_f(any(),type_definition_ast()).
+-spec find_f(any(),type_definition_ast())->true|false.
 
 % specific value of: atom() , integer() , float() , string()
 % add negative numbers
