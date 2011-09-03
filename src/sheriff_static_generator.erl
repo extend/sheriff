@@ -49,11 +49,19 @@ build_f(Param,{string,_L,Val},_)->{call,1,
 				{atom,1,are_eq}},
                		        [{var,1,Param},{string,1,Val}]
 			      };
-build_f(_,{var,_L,'_'},_)->{atom,1,true}.
+build_f(_,{var,_L,'_'},_)->{atom,1,true};
 
+% range  (ex: -10..10) , call is_between
+% TODO to remove, and make it statical,will be fixed soon
+build_f(Param,{type,_L,range,List},_)->
+    {call,1,
+      {remote,1,{atom,1,sheriff_static_generator},{atom,1,is_between}},
+      [{var,1,Param}|List]
+    }.
 
 %%---------------------------------------------------
 %%---------------------------------------------------
 
 %TODO check build_f/3, thid function will be removed soon
 are_eq(X,A) -> (X=:=A).
+is_between(X,A,B)-> is_integer(X) andalso (A=<X) andalso (X=<B).
