@@ -112,6 +112,13 @@ build_f(Param,{type,_L,list,[Type_def]},List_of_type_arg)->
 	        {var,1,Param}]}]}]}},
         []}};
 
+% For user type parameter input 
+build_f(Param,{var,_L,Val},_)->
+    {call,1,
+        {remote,1,{atom,1,sheriff_dynamic_generator},{atom,1,find_f}},
+        [{var,1,Param},{var,1,Val}]
+};
+
 %%---------------------------------------------------
 %%---------------------------------------------------
 
