@@ -47,3 +47,10 @@ find_f(Param,{type,_L,tuple,List_def})->
     andalso (length(tuple_to_list(Param))==length(List_def))
     andalso lists:all( fun({Par,Def})->(find_f(Par,Def)) end,
                     lists:zip(tuple_to_list(Param),List_def) );
+
+% list
+find_f(Param,{type,_L,list,[Type_def]})->
+    is_list(Param) 
+    andalso lists:all( fun(X)->(find_f(X,Type_def)) end,
+                    Param );
+
