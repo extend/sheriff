@@ -40,3 +40,24 @@ name_var(Incr)->
     Number=ets:update_counter(my_table, 'sheriff_$_var', Incr),
     %TO TEST ADD: ???  test=is_integer(Number),
     list_to_atom(lists:concat(['Sheriff_$_suspect_',Number])).
+
+%% for tuple
+%% It generates a list of the length given in argument. This list has 
+%% a list of name for variables used in the AST of the function generated.
+-spec name_var_list(integer())->list_ast().
+name_var_list(N)->name_var_list(N,[]).
+
+%% see before
+-spec name_var_list(integer(),[atom()])->list_ast().
+name_var_list(0,List)->
+     A=lists:reverse(List),
+     ets:insert(my_table, {'sheriff_$_var_list', A}),
+     lists:foldr(fun(X,Acc)->{cons,1,{var,1,X},Acc} end, {nil,1}, A);
+name_var_list(N,List)->
+     name_var_list(N-1,[name_var(1)|List]).
+
+%% Return the last list genreated by name_var_list (not the AST)
+-spec name_var_list_lookup()->[atom()].
+name_var_list_lookup()->
+    [{_Key,List}]=ets:lookup(my_table,'sheriff_$_var_list'),
+    List.
