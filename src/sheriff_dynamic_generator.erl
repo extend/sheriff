@@ -35,3 +35,8 @@ find_f(Param,{type,_L,float,[]})->
     is_float(Param);
 find_f(Param,{type,_L,binary,[]})->
     is_binary(Param);
+
+% union
+find_f(_,{type,_L,union,[]})->false;
+find_f(Param,{type,_L,union,[H|T]})->
+    (find_f(Param,H)) orelse (find_f(Param,{type,_L,union,T}));
