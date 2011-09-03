@@ -98,6 +98,20 @@ build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
 		     List_def,List_of_type_arg)
     ]}]}},[{var,1,Param}]}}};
 
+% list
+build_f(Param,{type,_L,list,[Type_def]},List_of_type_arg)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_list},[{var,1,Param}]},
+	{call,1,
+            {'fun',1,{clauses,[{clause,1,[],[],
+                [{call,1,{remote,1,{atom,1,lists},{atom,1,all}},
+                    [{'fun',1,{clauses,[{clause,1,[{var,1,Param}],[],
+                        [
+			build_f(Param,Type_def,List_of_type_arg)
+		        ]}]}},
+	        {var,1,Param}]}]}]}},
+        []}};
+
 %%---------------------------------------------------
 %%---------------------------------------------------
 
