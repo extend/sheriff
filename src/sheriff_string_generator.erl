@@ -19,3 +19,9 @@ database()->
 -spec register_type({atom(),integer(),[any()]})->no_return().
 register_type({Type_name,_,List_of_type_arg})->
     ets:insert(my_table, {Type_name, length(List_of_type_arg)}).
+
+%% It takes a type name and return a name for a function
+-spec name_function(atom())->atom().
+name_function(Typename)-> 
+    list_to_atom(lists:concat(['sheriff_$_',Typename])).
+
