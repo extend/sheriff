@@ -58,3 +58,16 @@ find_f(Param,{type,_L,list,[Type_def]})->
     andalso lists:all( fun(X)->(find_f(X,Type_def)) end,
                     Param );
 
+% For using types defined by the user.
+find_f(Param,{type,_L,Type_name,[Param|Type_param]})->
+    apply(sheriff_string_generator:name_function(Type_name),Type_param);
+
+% For using types exported by other modules.
+% NOTE:
+% -these modules should have been compile using the {parse_transform,sheriff}
+% compiling options, with "same names" for the function prefix(name_function())
+find_f(Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
+		Type_param] })->
+    apply(Type_module,
+        sheriff_string_generator:name_function(Type_name),
+	[Param|Type_param]).
