@@ -25,3 +25,13 @@ find_f(Param,{type,_,range,[{op,_,'-',{integer,_,Deb}},
                                             {op,_,'-',{integer,_,Fin}}]})->
     is_integer(Param) andalso (Param=<Deb) andalso (Fin=<Param);
 
+% atom() , integer() , float() , binary()
+% to change if thing like -type int(A)::integer(A)|integer(5).
+find_f(Param,{type,_L,atom,[]})->
+    is_atom(Param);
+find_f(Param,{type,_L,integer,[]})->
+    is_integer(Param);
+find_f(Param,{type,_L,float,[]})->
+    is_float(Param);
+find_f(Param,{type,_L,binary,[]})->
+    is_binary(Param);
