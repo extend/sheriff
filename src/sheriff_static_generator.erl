@@ -76,6 +76,28 @@ build_f(Param,{type,_L,union,[H|T]},List_of_type_arg)->
     {op,1,'orelse',build_f(Param,H,List_of_type_arg),
 		   build_f(Param,{type,_L,union,T},List_of_type_arg)
     };
+
+% tuple , this code is not as elegent as the one for union
+% -type a()::{} make stranges reactions
+build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_tuple},[{var,1,Param}]},
+        {op,1,'andalso',
+            {op,1,'==',
+                {call,1,{atom,1,length},
+		    [{call,1,{atom,1,tuple_to_list},[{var,1,Param}]}]},
+                {integer,1,length(List_def)}
+            },
+            {call,1,{'fun',1,{clauses,[{clause,1,[{var,1,Param}],[],[
+		 {match,1,
+                     sheriff_string_generator:name_var_list(length(List_def)),
+                     {call,1,{atom,1,tuple_to_list},[{var,47,Param}]}
+       	     	 },
+		 tuple_match(
+		     sheriff_string_generator:name_var_list_lookup(),
+		     List_def,List_of_type_arg)
+    ]}]}},[{var,1,Param}]}}};
+
 %%---------------------------------------------------
 %%---------------------------------------------------
 
