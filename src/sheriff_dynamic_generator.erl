@@ -1,6 +1,10 @@
 -module(sheriff_dynamic_generator).
 -compile(export_all).
 
+-type type_definition_ast()::tuple().
+
+-spec find_f(any(),type_definition_ast()).
+
 % specific value of: atom() , integer() , float() , string()
 % add negative numbers
 find_f(Param,{atom,_L,Val})->
