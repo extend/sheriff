@@ -57,7 +57,18 @@ build_f(Param,{type,_L,range,List},_)->
     {call,1,
       {remote,1,{atom,1,sheriff_static_generator},{atom,1,is_between}},
       [{var,1,Param}|List]
-    }.
+    };
+
+% atom() , integer() , float() , binary()
+% to change if thing like -type int(A)::integer(A)|integer(5).
+build_f(Param,{type,_L,atom,[]},_)->
+    {call,1,{atom,1,is_atom},[{var,1,Param}]};
+build_f(Param,{type,_L,integer,[]},_)->
+    {call,1,{atom,1,is_integer},[{var,1,Param}]};
+build_f(Param,{type,_L,float,[]},_)->
+    {call,1,{atom,1,is_float},[{var,1,Param}]};
+build_f(Param,{type,_L,binary,[]},_)->
+    {call,1,{atom,1,is_binary},[{var,1,Param}]};
 
 %%---------------------------------------------------
 %%---------------------------------------------------
