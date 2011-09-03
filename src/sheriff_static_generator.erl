@@ -117,8 +117,18 @@ build_f(Param,{var,_L,Val},_)->
     {call,1,
         {remote,1,{atom,1,sheriff_dynamic_generator},{atom,1,find_f}},
         [{var,1,Param},{var,1,Val}]
-};
+    };
 
+% In order to use the type defined by the user
+build_f(Param,{type,_L,Type_name,Type_param},_)->
+    Type_var=lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end,
+                   Type_param ),
+    case (ets:lookup(my_table,Type_name)==[{Type_name,length(Type_param)}]) of
+        true->{call,1,{atom,1,
+		sheriff_string_generator:name_function(Type_name)},
+	        [{var,1,Param}|Type_var]};
+        false-> error("undifined type / not supported yet")
+    end;
 %%---------------------------------------------------
 %%---------------------------------------------------
 
