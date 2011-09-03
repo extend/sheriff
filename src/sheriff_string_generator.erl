@@ -32,3 +32,11 @@ name_var()->
     ets:insert(my_table, {'sheriff_$_var', 0}),
     'Sheriff_$_suspect'. %%the name of the main parameter to check 
 
+%% It returns variable name to use in the code generated.
+%% These name are supposed not to match with user's name, and with
+%% other variable's name generated.
+-spec name_var(integer())->atom().
+name_var(Incr)->
+    Number=ets:update_counter(my_table, 'sheriff_$_var', Incr),
+    %TO TEST ADD: ???  test=is_integer(Number),
+    list_to_atom(lists:concat(['Sheriff_$_suspect_',Number])).
