@@ -118,3 +118,11 @@ build_f(Param,{type,_L,list,[Type_def]},List_of_type_arg)->
 %TODO check build_f/3, thid function will be removed soon
 are_eq(X,A) -> (X=:=A).
 is_between(X,A,B)-> is_integer(X) andalso (A=<X) andalso (X=<B).
+
+% function for building tuple testing code
+tuple_match([],[],_)->{atom,1,true};
+tuple_match([Param|Suite],[Type_def|List_suite],List_of_type_arg)->
+    {op,1,'andalso',
+        build_f(Param,Type_def,List_of_type_arg),
+	tuple_match(Suite,List_suite,List_of_type_arg)
+    }.
