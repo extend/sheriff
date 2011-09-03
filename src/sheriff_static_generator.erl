@@ -129,6 +129,20 @@ build_f(Param,{type,_L,Type_name,Type_param},_)->
 	        [{var,1,Param}|Type_var]};
         false-> error("undifined type / not supported yet")
     end;
+
+% In order to use the type defined by the user, which are in other modules
+% NOTE:
+% -these modules should have been compile using the {parse_transform,sheriff}
+% compiling options, with the same module version for the sheriff module
+build_f(Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
+		Type_param] },_)->
+    Type_var=lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end,
+                   Type_param ),
+    {call,1,
+        {remote,1,{atom,1,Type_module},
+	     {atom,1,sheriff_string_generator:name_function(Type_name)}},
+              [{var,1,Param}|Type_var]
+    }.
 %%---------------------------------------------------
 %%---------------------------------------------------
 
