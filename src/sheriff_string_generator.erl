@@ -1,0 +1,2 @@
+-module(sheriff_string_generator).
+-compile(export_all).
