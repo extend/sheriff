@@ -70,6 +70,12 @@ build_f(Param,{type,_L,float,[]},_)->
 build_f(Param,{type,_L,binary,[]},_)->
     {call,1,{atom,1,is_binary},[{var,1,Param}]};
 
+% union
+build_f(_,{type,_L,union,[]},_)->{atom,1,false};
+build_f(Param,{type,_L,union,[H|T]},List_of_type_arg)->
+    {op,1,'orelse',build_f(Param,H,List_of_type_arg),
+		   build_f(Param,{type,_L,union,T},List_of_type_arg)
+    };
 %%---------------------------------------------------
 %%---------------------------------------------------
 
