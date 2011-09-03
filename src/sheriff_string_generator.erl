@@ -6,9 +6,9 @@
 		|{cons,integer(),{var,integer(),atom()},list_ast()}.
 
 %% @doc internal functions for generating function's name and variable's name, 
-%% @doc in order to avoid conflict with name given by the user
+%% @doc in order to avoid conflict with name given by the user.
 
-%% Initialise the ets table used for generating different names
+%% Initialise the ets table used for generating different names.
 -spec database()->no_return().
 database()->
     ets:new(my_table, [named_table, protected, set, {keypos, 1}]),
@@ -20,8 +20,15 @@ database()->
 register_type({Type_name,_,List_of_type_arg})->
     ets:insert(my_table, {Type_name, length(List_of_type_arg)}).
 
-%% It takes a type name and return a name for a function
+%% It takes a type name and return a name for a function.
 -spec name_function(atom())->atom().
 name_function(Typename)-> 
     list_to_atom(lists:concat(['sheriff_$_',Typename])).
+
+%% It initialises a variable name, used for the code generated.
+-spec name_var()->'Sheriff_$_suspect'.
+name_var()->
+    ets:delete(my_table,'sheriff_$_var'),
+    ets:insert(my_table, {'sheriff_$_var', 0}),
+    'Sheriff_$_suspect'. %%the name of the main parameter to check 
 
