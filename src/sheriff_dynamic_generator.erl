@@ -40,3 +40,10 @@ find_f(Param,{type,_L,binary,[]})->
 find_f(_,{type,_L,union,[]})->false;
 find_f(Param,{type,_L,union,[H|T]})->
     (find_f(Param,H)) orelse (find_f(Param,{type,_L,union,T}));
+
+% tuple 
+find_f(Param,{type,_L,tuple,List_def})->
+    is_tuple(Param) 
+    andalso (length(tuple_to_list(Param))==length(List_def))
+    andalso lists:all( fun({Par,Def})->(find_f(Par,Def)) end,
+                    lists:zip(tuple_to_list(Param),List_def) );
