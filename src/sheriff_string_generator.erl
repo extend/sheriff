@@ -14,7 +14,9 @@
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -module(sheriff_string_generator).
--compile(export_all).
+-export([database/0,register_type/1,name_function/1,name_var/0,name_var/1,
+        name_var_list/1,name_var_list_lookup/0]).
+
 
 -type list_ast():: {nil,integer()}
                 |{var,integer(),atom()}

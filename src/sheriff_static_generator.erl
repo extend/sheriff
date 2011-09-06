@@ -14,7 +14,7 @@
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -module(sheriff_static_generator).
--compile(export_all).
+-export([build_f/1,are_eq/2,is_between/3]).
 
 
 -type var_ast_definition()::{var,integer(),atom()}. %% included in tuple().
@@ -162,10 +162,13 @@ build_f(Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
 %%---------------------------------------------------
 
 %TODO check build_f/3, thid function will be removed soon
+-spec are_eq(any(),any())->true|false.
 are_eq(X,A) -> (X=:=A).
+-spec is_between(integer(),integer(),integer())->true|false.
 is_between(X,A,B)-> is_integer(X) andalso (A=<X) andalso (X=<B).
 
 % function for building tuple testing code
+-spec tuple_match([atom()],[type_definition_ast()],any())->function_ast().
 tuple_match([],[],_)->{atom,1,true};
 tuple_match([Param|Suite],[Type_def|List_suite],List_of_type_arg)->
     {op,1,'andalso',

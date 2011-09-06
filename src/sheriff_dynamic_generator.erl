@@ -14,7 +14,8 @@
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -module(sheriff_dynamic_generator).
--compile(export_all).
+-export([find_f/2]).
+
 
 -type type_definition_ast()::tuple().
 
