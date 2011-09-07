@@ -1,5 +1,20 @@
+%% Copyright (c) 2011, William Dang <malliwi@hotmail.com>,
+%%                     Hamza Mahmood <zar_roc@hotmail.fr>
+%%
+%% Permission to use, copy, modify, and/or distribute this software for any
+%% purpose with or without fee is hereby granted, provided that the above
+%% copyright notice and this permission notice appear in all copies.
+%%
+%% THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+%% WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+%% MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+%% ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+%% WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+%% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+%% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 -module(sheriff_static_generator).
--compile(export_all).
+-export([build_f/1,are_eq/2,is_between/3]).
 
 
 -type var_ast_definition()::{var,integer(),atom()}. %% included in tuple().
@@ -147,10 +162,13 @@ build_f(Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
 %%---------------------------------------------------
 
 %TODO check build_f/3, thid function will be removed soon
+-spec are_eq(any(),any())->true|false.
 are_eq(X,A) -> (X=:=A).
+-spec is_between(integer(),integer(),integer())->true|false.
 is_between(X,A,B)-> is_integer(X) andalso (A=<X) andalso (X=<B).
 
 % function for building tuple testing code
+-spec tuple_match([atom()],[type_definition_ast()],any())->function_ast().
 tuple_match([],[],_)->{atom,1,true};
 tuple_match([Param|Suite],[Type_def|List_suite],List_of_type_arg)->
     {op,1,'andalso',
