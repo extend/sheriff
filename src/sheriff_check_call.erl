@@ -108,7 +108,7 @@ make_ast(A)->
 %% @doc Return an Erlang tree
 -spec send_ast(form()) -> list().
 send_ast({attribute,_,type,{sheriff,{type,_,_Type_name,List},[]}})->
-	lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end, List );
+    lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end, List );
 send_ast({attribute,_,type,{sheriff,{remote_type,_,
 		[{atom,_,_Type_module},{atom,_,_Type_name},List ]},[]}})->
-	lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end, List ).
+    lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end, List ).

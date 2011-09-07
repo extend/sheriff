@@ -1,24 +1,39 @@
+%% Copyright (c) 2011, William Dang <malliwi@hotmail.com>,
+%%                     Hamza Mahmood <zar_roc@hotmail.fr>
+%%
+%% Permission to use, copy, modify, and/or distribute this software for any
+%% purpose with or without fee is hereby granted, provided that the above
+%% copyright notice and this permission notice appear in all copies.
+%%
+%% THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+%% WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+%% MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+%% ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+%% WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+%% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+%% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 -module(sheriff_string_generator).
--compile(export_all).
+-export([database/0,register_type/1,name_function/1,name_var/0,name_var/1,
+        name_var_list/1,name_var_list_lookup/0]).
 
 -type list_ast():: {nil,integer()}
-                |{var,integer(),atom()}
 		|{cons,integer(),{var,integer(),atom()},list_ast()}.
 
 %% @doc internal functions for generating function's name and variable's name, 
 %% @doc in order to avoid conflict with name given by the user.
 
 %% Initialise the ets table used for generating different names.
--spec database()->no_return().
+-spec database()->true.
 database()->
-    ets:new(my_table, [named_table, protected, set, {keypos, 1}]),
-    ets:insert(my_table, {'sheriff_$_var', 0}).
+    my_table=ets:new(my_table, [named_table, protected, set, {keypos, 1}]),
+    true=ets:insert(my_table, {'sheriff_$_var', 0}).
 
 %% It registers types defined by the user within the module, for checking 
 %% purpose.
 -spec register_type({atom(),integer(),[any()]})->no_return().
 register_type({Type_name,_,List_of_type_arg})->
-    ets:insert(my_table, {Type_name, length(List_of_type_arg)}).
+    true=ets:insert(my_table, {Type_name, length(List_of_type_arg)}).
 
 %% It takes a type name and return a name for a function.
 -spec name_function(atom())->atom().
@@ -28,8 +43,8 @@ name_function(Typename)->
 %% It initialises a variable name, used for the code generated.
 -spec name_var()->'Sheriff_$_suspect'.
 name_var()->
-    ets:delete(my_table,'sheriff_$_var'),
-    ets:insert(my_table, {'sheriff_$_var', 0}),
+    true=ets:delete(my_table,'sheriff_$_var'),
+    true=ets:insert(my_table, {'sheriff_$_var', 0}),
     'Sheriff_$_suspect'. %%the name of the main parameter to check 
 
 %% It returns variable name to use in the code generated.
@@ -51,7 +66,7 @@ name_var_list(N)->name_var_list(N,[]).
 -spec name_var_list(integer(),[atom()])->list_ast().
 name_var_list(0,List)->
      A=lists:reverse(List),
-     ets:insert(my_table, {'sheriff_$_var_list', A}),
+     true=ets:insert(my_table, {'sheriff_$_var_list', A}),
      lists:foldr(fun(X,Acc)->{cons,1,{var,1,X},Acc} end, {nil,1}, A);
 name_var_list(N,List)->
      name_var_list(N-1,[name_var(1)|List]).
