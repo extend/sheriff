@@ -92,8 +92,9 @@ build_f(Param,{type,_L,union,[H|T]},List_of_type_arg)->
 		   build_f(Param,{type,_L,union,T},List_of_type_arg)
     };
 
-% tuple , this code is not as elegent as the one for union
-% -type a()::{} make stranges reactions
+% tuple , this code is not as elegant as the one for union
+build_f(Param,{type,_L,tuple,any},_)->
+    {call,1,{atom,1,is_tuple},[{var,1,Param}]};
 build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
     {op,1,'andalso',
         {call,1,{atom,1,is_tuple},[{var,1,Param}]},
@@ -114,6 +115,8 @@ build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
     ]}]}},[{var,1,Param}]}}};
 
 % list
+build_f(Param,{type,_L,list,[]},_)->
+    {call,1,{atom,1,is_list},[{var,1,Param}]};
 build_f(Param,{type,_L,list,[Type_def]},List_of_type_arg)->
     {op,1,'andalso',
         {call,1,{atom,1,is_list},[{var,1,Param}]},
