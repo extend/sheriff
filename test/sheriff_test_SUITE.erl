@@ -12,7 +12,7 @@
 -type c(A) :: [{A}|d()].
 -type d() :: [{a()}|list()].
 -type f() :: [integer()|{f()}].
--type g() :: test2:e(b()).
+-type g() :: external_type:e(b()).
 -type h() :: -5..5|{tuple(tuple())}.
 -type i() :: {i()}.
 
@@ -44,10 +44,10 @@ test(Config) ->
 	true = sheriff:check([[azerty],[qsd]],d()),
 	false = sheriff:check(1.2,d()),
 
-	true = sheriff:check({aze,5,-5,2.1},test2:e(tuple())),
-	true = sheriff:check([3,2],test2:e(a())),
-	true = sheriff:check(5,test2:e(tuple())),
-	false = sheriff:check(8,test2:e(a())),
+	true = sheriff:check({aze,5,-5,2.1},external_type:e(tuple())),
+	true = sheriff:check([3,2],external_type:e(a())),
+	true = sheriff:check(5,external_type:e(tuple())),
+	false = sheriff:check(8,external_type:e(a())),
 
 	true = sheriff:check([5,5,2,-7,10000000],f()),
 	true = sheriff:check([{[5,2,4]}],f()),
