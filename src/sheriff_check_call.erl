@@ -22,7 +22,6 @@
 
 
 %% @doc Function to call.
-%% 
 %% Search in the tree and replace call function sheriff:check by the appropriate
 %% call.
 -spec main(forms(), options()) -> forms().
@@ -57,7 +56,6 @@ replace(_, Form, _Ctxt, Acc) ->
 build(Operator, Var, PosCall) ->
 	case erl_syntax:type(Operator) of
 		application ->
-			%%Pos = erl_syntax:get_pos(Operator),
 			Op = erl_syntax:application_operator(Operator),
 			Args = erl_syntax:application_arguments(Operator),
 			{Mod,FunName} = get_new_name(Op),
@@ -69,8 +67,7 @@ build(Operator, Var, PosCall) ->
 			end,
 			build_call(Mod,NewOp,NewArgs,PosCall);
 		_ ->
-			%% @todo Manage errors when the 2nd argument is not a call.
-			Operator
+			throw({error, badarg, Operator})
 	end.
 
 %% @doc Return the module and the name of the new call
@@ -108,7 +105,7 @@ make_ast(A)->
 %% @doc Return an Erlang tree
 -spec send_ast(form()) -> list().
 send_ast({attribute,_,type,{sheriff,{type,_,_Type_name,List},[]}})->
-    lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end, List );
+	lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end, List );
 send_ast({attribute,_,type,{sheriff,{remote_type,_,
 		[{atom,_,_Type_module},{atom,_,_Type_name},List ]},[]}})->
-    lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end, List ).
+	lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end, List ).
