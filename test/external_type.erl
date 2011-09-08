@@ -1,0 +1,4 @@
+-module(external_type).
+-compile({parse_transform, sheriff}).
+-export_type([e/1]).
+-type e(A) :: 5|A.
