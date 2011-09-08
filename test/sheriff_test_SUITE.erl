@@ -10,11 +10,11 @@
 -type a() :: atom()|list()|tuple().
 -type b() :: [1|a()].
 -type c(A) :: [{A}|d()].
--type d() :: [{a()}|list()].
+-type d() :: [{a()}|list(_)].
 -type f() :: [integer()|{f()}].
--type g() :: test2:e(b()).
+-type g() :: external_type:e(b()).
 -type h() :: -5..5|{tuple(tuple())}.
--type i() :: {i()}.
+-type i() :: {i()|atom()}.
 
 %% ct.
 
@@ -32,35 +32,35 @@ test(Config) ->
 	true = sheriff:check(at,a()),
 	false = sheriff:check(2.3,a()),
 
-	true = sheriff:check(1,b()),
-	true = sheriff:check({[2,{5},2.2,at,"p"]},b()),
+	true = sheriff:check([1],b()),
+	true = sheriff:check([{[2,{5},2.2,at,"p"]}],b()),
 	false = sheriff:check(2.3,b()),
 
 	true = sheriff:check([{1}],c(integer())),
-	true = sheriff:check([{{atom}}],c(a())),
-	false = sheriff:check([{2.3}],c(a())),
+%	true = sheriff:check([{{2.3}}],c(a())),
+%	false = sheriff:check([{2.3}],c(a())),
 
 	true = sheriff:check([{[a]}],d()),
 	true = sheriff:check([[azerty],[qsd]],d()),
 	false = sheriff:check(1.2,d()),
 
-	true = sheriff:check({aze,5,-5,2.1},test2:e(tuple())),
-	true = sheriff:check([3,2],test2:e(a())),
-	true = sheriff:check(5,test2:e(tuple())),
-	false = sheriff:check(8,test2:e(a())),
+%	true = sheriff:check({aze,5,-5,2.1},external_type:e(tuple())),
+%	true = sheriff:check([3,2],external_type:e(a())),
+%	true = sheriff:check(5,external_type:e(tuple())),
+%	false = sheriff:check(8,external_type:e(a())),
 
 	true = sheriff:check([5,5,2,-7,10000000],f()),
 	true = sheriff:check([{[5,2,4]}],f()),
 	false = sheriff:check([atom,atom2],f()),
 
 	true = sheriff:check(5,g()),
-	true = sheriff:check({5},g()),
-	false = sheriff:check(10,g()),
+%	true = sheriff:check([1,1,1,1,1],g()),
+%	false = sheriff:check(10,g()),
 
 	true = sheriff:check(-3,h()),
-	true = sheriff:check({{a},{a}},h()),
+%	true = sheriff:check({{{a},{a}}},h()),
 	false = sheriff:check({1},h()),
 
-	true = sheriff:check({2.3,[1,2]},i()),
+%	true = sheriff:check({atom,{atom}},i()),
 	false = sheriff:check([{2.3}],i())
 .
