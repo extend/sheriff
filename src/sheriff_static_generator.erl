@@ -93,7 +93,10 @@ build_f(Param,{type,_L,union,[H|T]},List_of_type_arg)->
     };
 
 % tuple , this code is not as elegant as the one for union
+%this one is useless but may work in other versions
 build_f(Param,{type,_L,tuple,[]},_)->
+    {call,1,{atom,1,is_tuple},[{var,1,Param}]};
+build_f(Param,{type,_L,tuple,any},_)->
     {call,1,{atom,1,is_tuple},[{var,1,Param}]};
 build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
     {op,1,'andalso',
