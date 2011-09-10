@@ -136,8 +136,7 @@ build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
         {call,1,{atom,1,is_tuple},[{var,1,Param}]},
         {op,1,'andalso',
             {op,1,'==',
-                {call,1,{atom,1,length},
-		    [{call,1,{atom,1,tuple_to_list},[{var,1,Param}]}]},
+		{call,1,{atom,1,tuple_size},[{var,1,Param}]},
                 {integer,1,length(List_def)}
             },
             {call,1,{'fun',1,{clauses,[{clause,1,[{var,1,Param}],[],[
