@@ -41,17 +41,37 @@ build_f({attribute,_L,type,{Type_name,Type_def,List_of_type_arg}})->
 %% for build_f/3, the third param may be removed someday, or changed.
 -spec build_f(atom(),type_definition_ast(),[any()])->function_ast().
 
-% specific value of: atom() , integer() 
+%% @doc any()
+build_f(_,{var,_L,'_'},_)->{atom,1,true};
+
+%% @doc Atom : atom() | Erlang_Atom
+% atom()
+build_f(Param,{type,_L,atom,[]},_)->
+    {call,1,{atom,1,is_atom},[{var,1,Param}]};
+% Erlang_Atom
 build_f(Param,{atom,_L,Val},_)->
     {op,1,'=:=',{var,1,Param},{atom,1,Val}};
+
+%% @doc Binary : binary() 
+build_f(Param,{type,_L,binary,[]},_)->
+    {call,1,{atom,1,is_binary},[{var,1,Param}]};
+
+%% @doc float()
+build_f(Param,{type,_L,float,[]},_)->
+    {call,1,{atom,1,is_float},[{var,1,Param}]};
+
+%% @doc Fun : fun()
+
+%% @doc Integer : integer() | Erlang_Integer | Erlang_Integer..Erlang_Integer
+% integer()
+build_f(Param,{type,_L,integer,[]},_)->
+    {call,1,{atom,1,is_integer},[{var,1,Param}]};
+% Erlang_Integer
 build_f(Param,{integer,_L,Val},_)->
     {op,1,'=:=',{var,1,Param},{integer,1,Val}};
 build_f(Param,{op,_L,'-',{integer,_,Val}},_)->
     {op,1,'=:=',{var,1,Param},{op,1,'-',{integer,1,Val}}};
-
-build_f(_,{var,_L,'_'},_)->{atom,1,true};
-
-% range  (ex: -10..10)
+% Erlang_Integer..Erlang_Integer , range
 build_f(Param,{type,_L,range,[{integer,_,Deb},{integer,_,Fin}]},_)->
     {op,1,'andalso',
         {call,1,{atom,1,is_integer},[{var,1,Param}]},
@@ -78,27 +98,39 @@ build_f(Param,{type,_L,range,[{op,_,'-',{integer,_,Deb}},
 	}
     };
 
-% atom() , integer() , float() , binary()
-% to change if thing like -type int(A)::integer(A)|integer(5).
-build_f(Param,{type,_L,atom,[]},_)->
-    {call,1,{atom,1,is_atom},[{var,1,Param}]};
-build_f(Param,{type,_L,integer,[]},_)->
-    {call,1,{atom,1,is_integer},[{var,1,Param}]};
-build_f(Param,{type,_L,float,[]},_)->
-    {call,1,{atom,1,is_float},[{var,1,Param}]};
-build_f(Param,{type,_L,binary,[]},_)->
-    {call,1,{atom,1,is_binary},[{var,1,Param}]};
+%% @doc List : list() | list(Type) | improper_list(Type1, Type2)    
+%% @doc          | maybe_improper_list(Type1, Type2) 
+% list()
+build_f(Param,{type,_L,list,[]},_)->
+    {call,1,{atom,1,is_list},[{var,1,Param}]};
+% list(Type) , this code may be improved
+build_f(Param,{type,_L,list,[Type_def]},List_of_type_arg)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_list},[{var,1,Param}]},
+	{call,1,
+            {'fun',1,{clauses,[{clause,1,[],[],
+                [{call,1,{remote,1,{atom,1,lists},{atom,1,all}},
+                    [{'fun',1,{clauses,[{clause,1,[{var,1,Param}],[],
+                        [
+			build_f(Param,Type_def,List_of_type_arg)
+		        ]}]}},
+	        {var,1,Param}]}]}]}},
+        []}};
 
-% union
-build_f(_,{type,_L,union,[]},_)->{atom,1,false};
-build_f(Param,{type,_L,union,[H|T]},List_of_type_arg)->
-    {op,1,'orelse',build_f(Param,H,List_of_type_arg),
-		   build_f(Param,{type,_L,union,T},List_of_type_arg)
-    };
-
-% tuple , this code is not as elegant as the one for union
+%% @doc Tuple :: tuple() | {} | {TList}
+% tuple()
 build_f(Param,{type,_L,tuple,any},_)->
     {call,1,{atom,1,is_tuple},[{var,1,Param}]};
+% {}
+build_f(Param,{type,_L,tuple,[]},_)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_tuple},[{var,1,Param}]},
+        {op,24,'==',
+            {call,1,{atom,1,tuple_size},[{var,1,Param}]},
+            {integer,1,0}
+        }
+    };
+% tuple(TList) / {TList} , this code may be improved
 build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
     {op,1,'andalso',
         {call,1,{atom,1,is_tuple},[{var,1,Param}]},
@@ -118,30 +150,22 @@ build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
 		     List_def,List_of_type_arg)
     ]}]}},[{var,1,Param}]}}};
 
-% list
-build_f(Param,{type,_L,list,[]},_)->
-    {call,1,{atom,1,is_list},[{var,1,Param}]};
-build_f(Param,{type,_L,list,[Type_def]},List_of_type_arg)->
-    {op,1,'andalso',
-        {call,1,{atom,1,is_list},[{var,1,Param}]},
-	{call,1,
-            {'fun',1,{clauses,[{clause,1,[],[],
-                [{call,1,{remote,1,{atom,1,lists},{atom,1,all}},
-                    [{'fun',1,{clauses,[{clause,1,[{var,1,Param}],[],
-                        [
-			build_f(Param,Type_def,List_of_type_arg)
-		        ]}]}},
-	        {var,1,Param}]}]}]}},
-        []}};
+%% @doc Union : union()
+build_f(_,{type,_L,union,[]},_)->{atom,1,false};
+build_f(Param,{type,_L,union,[H|T]},List_of_type_arg)->
+    {op,1,'orelse',
+        build_f(Param,H,List_of_type_arg),
+        build_f(Param,{type,_L,union,T},List_of_type_arg)
+    };
 
-% For user type parameter input 
+%% @doc UserDefined type: it handel type's parameters value
 build_f(Param,{var,_L,Val},_)->
     {call,1,
         {remote,1,{atom,1,sheriff_dynamic_generator},{atom,1,find_f}},
         [{var,1,Param},{var,1,Val}]
     };
 
-% In order to use the type defined by the user
+%% @doc UserDefined type: In order to use the type defined by the user
 build_f(Param,{type,_L,Type_name,Type_param},_)->
     Type_var=lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end,
                    Type_param ),
@@ -152,6 +176,7 @@ build_f(Param,{type,_L,Type_name,Type_param},_)->
         false-> error("undifined type / not supported yet")
     end;
 
+% @doc For UserDefined type:
 % In order to use the type defined by the user, which are in other modules
 % NOTE:
 % -these modules should have been compile using the {parse_transform,sheriff}
