@@ -14,7 +14,7 @@
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -module(sheriff_static_generator).
--export([build_f/1,are_eq/2,is_between/3]).
+-export([build_f/1]).
 
 
 -type var_ast_definition()::{var,integer(),atom()}. %% included in tuple().
@@ -41,37 +41,41 @@ build_f({attribute,_L,type,{Type_name,Type_def,List_of_type_arg}})->
 %% for build_f/3, the third param may be removed someday, or changed.
 -spec build_f(atom(),type_definition_ast(),[any()])->function_ast().
 
-% specific value of: atom() , integer() , float() , string() , call are_eq
-% TODO to remove, and add negative numbers
-% this part isn't static, will be fixed soon
-build_f(Param,{atom,_L,Val},_)->{call,1,
-			      {remote,1,{atom,1,sheriff_static_generator},
-			      {atom,1,are_eq}},
-               		      [{var,1,Param},{atom,1,Val}]
-			    };
-build_f(Param,{integer,_L,Val},_)->{call,1,
-			         {remote,1,{atom,1,sheriff_static_generator},
-				 {atom,1,are_eq}},
-               		         [{var,1,Param},{integer,1,Val}]
-			       };
-build_f(Param,{float,_L,Val},_)->{call,1,
-			       {remote,1,{atom,1,sheriff_static_generator},
-			       {atom,1,are_eq}},
-               		       [{var,1,Param},{float,1,Val}]
-			     };
-build_f(Param,{string,_L,Val},_)->{call,1,
-			        {remote,1,{atom,1,sheriff_static_generator},
-				{atom,1,are_eq}},
-               		        [{var,1,Param},{string,1,Val}]
-			      };
+% specific value of: atom() , integer() 
+build_f(Param,{atom,_L,Val},_)->
+    {op,1,'=:=',{var,1,Param},{atom,1,Val}};
+build_f(Param,{integer,_L,Val},_)->
+    {op,1,'=:=',{var,1,Param},{integer,1,Val}};
+build_f(Param,{op,_L,'-',{integer,_,Val}},_)->
+    {op,1,'=:=',{var,1,Param},{op,1,'-',{integer,1,Val}}};
+
 build_f(_,{var,_L,'_'},_)->{atom,1,true};
 
-% range  (ex: -10..10) , call is_between
-% TODO to remove, and make it statical,will be fixed soon
-build_f(Param,{type,_L,range,List},_)->
-    {call,1,
-      {remote,1,{atom,1,sheriff_static_generator},{atom,1,is_between}},
-      [{var,1,Param}|List]
+% range  (ex: -10..10)
+build_f(Param,{type,_L,range,[{integer,_,Deb},{integer,_,Fin}]},_)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_integer},[{var,1,Param}]},
+	{op,1,'andalso',
+	    {op,1,'>=',{var,1,Param},{integer,1,Deb}},
+	    {op,1,'=<',{var,1,Param},{integer,1,Fin}}
+	}
+    };
+build_f(Param,{type,_L,range,[{op,_,'-',{integer,_,Deb}},{integer,_,Fin}]},_)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_integer},[{var,1,Param}]},
+	{op,1,'andalso',
+	    {op,1,'>=',{var,1,Param},{op,1,'-',{integer,1,Deb}}},
+	    {op,1,'=<',{var,1,Param},{integer,1,Fin}}
+	}
+    };
+build_f(Param,{type,_L,range,[{op,_,'-',{integer,_,Deb}},
+                                            {op,_,'-',{integer,_,Fin}}]},_)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_integer},[{var,1,Param}]},
+	{op,1,'andalso',
+	    {op,1,'>=',{var,1,Param},{op,1,'-',{integer,1,Deb}}},
+	    {op,1,'=<',{var,1,Param},{op,1,'-',{integer,1,Fin}}}
+	}
     };
 
 % atom() , integer() , float() , binary()
@@ -164,11 +168,6 @@ build_f(Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
 %%---------------------------------------------------
 %%---------------------------------------------------
 
-%TODO check build_f/3, thid function will be removed soon
--spec are_eq(any(),any())->true|false.
-are_eq(X,A) -> (X=:=A).
--spec is_between(integer(),integer(),integer())->true|false.
-is_between(X,A,B)-> is_integer(X) andalso (A=<X) andalso (X=<B).
 
 % function for building tuple testing code
 -spec tuple_match([atom()],[type_definition_ast()],any())->function_ast().
