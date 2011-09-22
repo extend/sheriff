@@ -62,6 +62,8 @@ find_f(Param,{type,_L,union,[H|T]})->
     (find_f(Param,H)) orelse (find_f(Param,{type,_L,union,T}));
 
 % tuple 
+find_f(Param,{type,_L,tuple,any})->
+    is_tuple(Param);
 find_f(Param,{type,_L,tuple,List_def})->
     is_tuple(Param) 
     andalso (length(tuple_to_list(Param))==length(List_def))
@@ -69,6 +71,8 @@ find_f(Param,{type,_L,tuple,List_def})->
                     lists:zip(tuple_to_list(Param),List_def) );
 
 % list
+find_f(Param,{type,_L,list,[]})->
+    is_list(Param);
 find_f(Param,{type,_L,list,[Type_def]})->
     is_list(Param) 
     andalso lists:all( fun(X)->(find_f(X,Type_def)) end,

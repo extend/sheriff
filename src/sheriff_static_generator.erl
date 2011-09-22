@@ -14,7 +14,7 @@
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -module(sheriff_static_generator).
--export([build_f/1,are_eq/2,is_between/3]).
+-export([build_f/1]).
 
 
 -type var_ast_definition()::{var,integer(),atom()}. %% included in tuple().
@@ -41,85 +41,107 @@ build_f({attribute,_L,type,{Type_name,Type_def,List_of_type_arg}})->
 %% for build_f/3, the third param may be removed someday, or changed.
 -spec build_f(atom(),type_definition_ast(),[any()])->function_ast().
 
-% specific value of: atom() , integer() , float() , string() , call are_eq
-% TODO to remove, and add negative numbers
-% this part isn't static, will be fixed soon
-build_f(Param,{atom,_L,Val},_)->{call,1,
-			      {remote,1,{atom,1,sheriff_static_generator},
-			      {atom,1,are_eq}},
-               		      [{var,1,Param},{atom,1,Val}]
-			    };
-build_f(Param,{integer,_L,Val},_)->{call,1,
-			         {remote,1,{atom,1,sheriff_static_generator},
-				 {atom,1,are_eq}},
-               		         [{var,1,Param},{integer,1,Val}]
-			       };
-build_f(Param,{float,_L,Val},_)->{call,1,
-			       {remote,1,{atom,1,sheriff_static_generator},
-			       {atom,1,are_eq}},
-               		       [{var,1,Param},{float,1,Val}]
-			     };
-build_f(Param,{string,_L,Val},_)->{call,1,
-			        {remote,1,{atom,1,sheriff_static_generator},
-				{atom,1,are_eq}},
-               		        [{var,1,Param},{string,1,Val}]
-			      };
+%% @doc any()
 build_f(_,{var,_L,'_'},_)->{atom,1,true};
 
-% range  (ex: -10..10) , call is_between
-% TODO to remove, and make it statical,will be fixed soon
-build_f(Param,{type,_L,range,List},_)->
-    {call,1,
-      {remote,1,{atom,1,sheriff_static_generator},{atom,1,is_between}},
-      [{var,1,Param}|List]
-    };
+%% @doc none() might be removed
+build_f(_,{type,_L,none,[]},_)->{atom,1,false};
 
-% atom() , integer() , float() , binary()
-% to change if thing like -type int(A)::integer(A)|integer(5).
+%% @doc pid()
+build_f(Param,{type,_L,pid,[]},_)->
+    {call,1,{atom,1,is_pid},[{var,1,Param}]};
+
+%% @doc port()
+build_f(Param,{type,_L,port,[]},_)->
+    {call,1,{atom,1,is_port},[{var,1,Param}]};
+
+%% @doc reference()
+build_f(Param,{type,_L,reference,[]},_)->
+    {call,1,{atom,1,is_reference},[{var,1,Param}]};
+
+%% @doc [] 
+build_f(Param,{type,_L,nil,[]},_)->
+    {op,1,'=:=',{var,1,Param},{nil,1}};
+
+%% @doc Atom : atom() | Erlang_Atom
+% atom()
 build_f(Param,{type,_L,atom,[]},_)->
     {call,1,{atom,1,is_atom},[{var,1,Param}]};
-build_f(Param,{type,_L,integer,[]},_)->
-    {call,1,{atom,1,is_integer},[{var,1,Param}]};
-build_f(Param,{type,_L,float,[]},_)->
-    {call,1,{atom,1,is_float},[{var,1,Param}]};
+% Erlang_Atom
+build_f(Param,{atom,_L,Val},_)->
+    {op,1,'=:=',{var,1,Param},{atom,1,Val}};
+
+%% @doc Binary : binary() |<<>>|<<_:Rem>>|<<_:_*Div>>|<<_:Rem , _:_*Div>>
+% binary()
 build_f(Param,{type,_L,binary,[]},_)->
     {call,1,{atom,1,is_binary},[{var,1,Param}]};
-
-% union
-build_f(_,{type,_L,union,[]},_)->{atom,1,false};
-build_f(Param,{type,_L,union,[H|T]},List_of_type_arg)->
-    {op,1,'orelse',build_f(Param,H,List_of_type_arg),
-		   build_f(Param,{type,_L,union,T},List_of_type_arg)
+% <<>>|<<_:Rem>>|<<_:_*Div>>|<<_:Rem , _:_*Div>>
+build_f(Param,{type,_L,binary,[{integer,_,Rem},{integer,_,Div}]},_)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_bitstring},[{var,1,Param}]},
+	{op,1,'==',
+            {op,1,'rem',
+                {call,1,{atom,1,bit_size},[{var,1,Param}]},
+                {integer,1,Div}
+            },
+            {integer,1,Rem}
+        }
     };
 
-% tuple , this code is not as elegant as the one for union
-%this one is useless but may work in other versions
-build_f(Param,{type,_L,tuple,[]},_)->
-    {call,1,{atom,1,is_tuple},[{var,1,Param}]};
-build_f(Param,{type,_L,tuple,any},_)->
-    {call,1,{atom,1,is_tuple},[{var,1,Param}]};
-build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
-    {op,1,'andalso',
-        {call,1,{atom,1,is_tuple},[{var,1,Param}]},
-        {op,1,'andalso',
-            {op,1,'==',
-                {call,1,{atom,1,length},
-		    [{call,1,{atom,1,tuple_to_list},[{var,1,Param}]}]},
-                {integer,1,length(List_def)}
-            },
-            {call,1,{'fun',1,{clauses,[{clause,1,[{var,1,Param}],[],[
-		 {match,1,
-                     sheriff_string_generator:name_var_list(length(List_def)),
-                     {call,1,{atom,1,tuple_to_list},[{var,47,Param}]}
-       	     	 },
-		 tuple_match(
-		     sheriff_string_generator:name_var_list_lookup(),
-		     List_def,List_of_type_arg)
-    ]}]}},[{var,1,Param}]}}};
+%% @doc float()
+build_f(Param,{type,_L,float,[]},_)->
+    {call,1,{atom,1,is_float},[{var,1,Param}]};
 
-% list
+%% @doc Fun : fun()
+%% @TODO fun are tested in a generical way, add:
+%       fun((...)->integer())|fun(()->integer())
+%           |fun((atom(),float())->integer()|float()).
+% fun()
+build_f(Param,{type,_L,'fun',_},_)->
+    {call,1,{atom,1,is_function},[{var,1,Param}]};
+
+%% @doc Integer : integer() | Erlang_Integer | Erlang_Integer..Erlang_Integer
+% integer()
+build_f(Param,{type,_L,integer,[]},_)->
+    {call,1,{atom,1,is_integer},[{var,1,Param}]};
+% Erlang_Integer
+build_f(Param,{integer,_L,Val},_)->
+    {op,1,'=:=',{var,1,Param},{integer,1,Val}};
+build_f(Param,{op,_L,'-',{integer,_,Val}},_)->
+    {op,1,'=:=',{var,1,Param},{op,1,'-',{integer,1,Val}}};
+% Erlang_Integer..Erlang_Integer , range
+build_f(Param,{type,_L,range,[{integer,_,Deb},{integer,_,Fin}]},_)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_integer},[{var,1,Param}]},
+	{op,1,'andalso',
+	    {op,1,'>=',{var,1,Param},{integer,1,Deb}},
+	    {op,1,'=<',{var,1,Param},{integer,1,Fin}}
+	}
+    };
+build_f(Param,{type,_L,range,[{op,_,'-',{integer,_,Deb}},{integer,_,Fin}]},_)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_integer},[{var,1,Param}]},
+	{op,1,'andalso',
+	    {op,1,'>=',{var,1,Param},{op,1,'-',{integer,1,Deb}}},
+	    {op,1,'=<',{var,1,Param},{integer,1,Fin}}
+	}
+    };
+build_f(Param,{type,_L,range,[{op,_,'-',{integer,_,Deb}},
+                                            {op,_,'-',{integer,_,Fin}}]},_)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_integer},[{var,1,Param}]},
+	{op,1,'andalso',
+	    {op,1,'>=',{var,1,Param},{op,1,'-',{integer,1,Deb}}},
+	    {op,1,'=<',{var,1,Param},{op,1,'-',{integer,1,Fin}}}
+	}
+    };
+
+%% @doc List : list() | list(Type) | improper_list(Type1, Type2)    
+%% @doc          | maybe_improper_list(Type1, Type2) 
+% list()
 build_f(Param,{type,_L,list,[]},_)->
     {call,1,{atom,1,is_list},[{var,1,Param}]};
+% list(Type) , this code may be improved
 build_f(Param,{type,_L,list,[Type_def]},List_of_type_arg)->
     {op,1,'andalso',
         {call,1,{atom,1,is_list},[{var,1,Param}]},
@@ -132,15 +154,165 @@ build_f(Param,{type,_L,list,[Type_def]},List_of_type_arg)->
 		        ]}]}},
 	        {var,1,Param}]}]}]}},
         []}};
+%% @TODO handel then dynamically
+% improper_list(integer(),atom()) | maybe_improper_list(integer(),atom())
 
-% For user type parameter input 
+%% @doc Tuple :: tuple() | {} | {TList}
+% tuple()
+build_f(Param,{type,_L,tuple,any},_)->
+    {call,1,{atom,1,is_tuple},[{var,1,Param}]};
+% {}
+build_f(Param,{type,_L,tuple,[]},_)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_tuple},[{var,1,Param}]},
+        {op,24,'==',
+            {call,1,{atom,1,tuple_size},[{var,1,Param}]},
+            {integer,1,0}
+        }
+    };
+% tuple(TList) / {TList} , this code may be improved
+build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_tuple},[{var,1,Param}]},
+        {op,1,'andalso',
+            {op,1,'==',
+		{call,1,{atom,1,tuple_size},[{var,1,Param}]},
+                {integer,1,length(List_def)}
+            },
+            {call,1,{'fun',1,{clauses,[{clause,1,[{var,1,Param}],[],[
+		 {match,1,
+                     sheriff_string_generator:name_var_list(length(List_def)),
+                     {call,1,{atom,1,tuple_to_list},[{var,47,Param}]}
+       	     	 },
+		 tuple_match(
+		     sheriff_string_generator:name_var_list_lookup(),
+		     List_def,List_of_type_arg)
+    ]}]}},[{var,1,Param}]}}};
+
+%% @doc Union : union()
+build_f(_,{type,_L,union,[]},_)->{atom,1,false};
+build_f(Param,{type,_L,union,[H|T]},List_of_type_arg)->
+    {op,1,'orelse',
+        build_f(Param,H,List_of_type_arg),
+        build_f(Param,{type,_L,union,T},List_of_type_arg)
+    };
+%% @doc UserDefined <--see in the end, after alias
+
+%% @doc [T,...] (the "nonempty_list")
+build_f(Param,{type,_L,nonempty_list,Type_def},List_of_type_arg)->
+    {op,1,'andalso',
+        build_f(Param,{type,_L,list,Type_def},List_of_type_arg),
+        {op,1,'/=',
+	    {call,1,{atom,1,length},[{var,1,Param}]},
+            {integer,1,0}
+        }
+    };
+
+
+%% ===========================================
+%% @doc Built-in type / Alias
+
+% term()
+build_f(_,{type,_L,term,[]},_)->{atom,1,true};
+
+% boolean()
+build_f(Param,{type,_L,boolean,[]},_)->
+    {op,1,'orelse',
+        {op,1,'/=',{var,1,Param},{atom,1,true}},
+        {op,1,'/=',{var,1,Param},{atom,1,false}}
+    };
+
+% byte()
+build_f(Param,{type,_L,byte,[]},_V)->
+    build_f(Param,{type,1,range,[{integer,1,0},{integer,1,255}]},_V);
+
+% char()
+build_f(Param,{type,_L,char,[]},_V)->
+    build_f(Param,{type,1,range,[{integer,1,0},{integer,1,1114111}]},_V);
+
+% non_neg_integer()
+build_f(Param,{type,_L,non_neg_integer,[]},_V)->
+    {op,1,'andalso',
+	{call,1,{atom,1,is_integer},[{var,1,Param}]},
+	{op,1,'>=',{var,1,Param},{integer,1,0}}
+    };
+
+% pos_integer()
+build_f(Param,{type,_L,pos_integer,[]},_V)->
+    {op,1,'andalso',
+	{call,1,{atom,1,is_integer},[{var,1,Param}]},
+	{op,1,'>',{var,1,Param},{integer,1,0}}
+    };
+
+% neg_integer()
+build_f(Param,{type,_L,neg_integer,[]},_V)->
+    {op,1,'andalso',
+        {call,1,{atom,1,is_integer},[{var,1,Param}]},
+	{op,1,'<',{var,1,Param},{integer,1,0}}
+    };
+
+% number()
+build_f(Param,{type,_L,number,[]},_V)->
+    {op,1,'orelse',
+        {call,1,{atom,1,is_integer},[{var,1,Param}]},
+        {call,1,{atom,1,is_float},[{var,1,Param}]}
+    };
+
+% list() : see List
+
+%% @TODO handel dynamically
+% maybe_improper_list()
+% maybe_improper_list(T)
+
+% string()
+build_f(Param,{type,_L,string,[]},_V)->
+    build_f(Param,{type,_L,list,[{type,_L,char,[]}] },_V);
+
+% nonempty_string()
+build_f(Param,{type,_L,nonempty_string,[]},_V)->
+    build_f(Param,{type,_L,nonempty_list,[{type,_L,char,[]}] },_V);
+
+%% @TODO handel dynamically iolist()
+
+% module()
+build_f(Param,{type,_L,module,[]},_V)->
+    build_f(Param,{type,_L,atom,[]},_V);
+
+% mfa()
+build_f(Param,{type,_L,mfa,[]},_V)->
+    build_f(Param,{type,_L,tuple,
+        [{type,22,atom,[]},{type,22,atom,[]},{type,22,byte,[]}] 
+                    },_V);
+
+% node()
+build_f(Param,{type,_L,node,[]},_V)->
+    build_f(Param,{type,_L,atom,[]},_V);
+
+% timeout()
+build_f(Param,{type,_L,timeout,[]},_V)->
+    {op,1,'orelse',
+        build_f(Param,{atom,_L,infinity},_V),
+        build_f(Param,{type,_L,non_neg_integer,[]},_V)
+    };
+
+% no_return()
+build_f(Param,{type,_L,no_return,[]},_V)->
+    build_f(Param,{type,_L,none,[]},_V);
+
+%% ===========================================
+
+% for record
+build_f(Param,{type,_L,record,[{atom,_,Record_name}] },_V)->
+    {call,1,{atom,1,is_record},[{var,1,Param},{atom,1,Record_name}]};
+
+%% @doc For UserDefined type: it handel type's parameters value
 build_f(Param,{var,_L,Val},_)->
     {call,1,
         {remote,1,{atom,1,sheriff_dynamic_generator},{atom,1,find_f}},
         [{var,1,Param},{var,1,Val}]
     };
 
-% In order to use the type defined by the user
+%% @doc UserDefined type: In order to use the type defined by the user
 build_f(Param,{type,_L,Type_name,Type_param},_)->
     Type_var=lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end,
                    Type_param ),
@@ -151,6 +323,7 @@ build_f(Param,{type,_L,Type_name,Type_param},_)->
         false-> error("undifined type / not supported yet")
     end;
 
+% @doc UserDefined type:
 % In order to use the type defined by the user, which are in other modules
 % NOTE:
 % -these modules should have been compile using the {parse_transform,sheriff}
@@ -167,11 +340,6 @@ build_f(Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
 %%---------------------------------------------------
 %%---------------------------------------------------
 
-%TODO check build_f/3, thid function will be removed soon
--spec are_eq(any(),any())->true|false.
-are_eq(X,A) -> (X=:=A).
--spec is_between(integer(),integer(),integer())->true|false.
-is_between(X,A,B)-> is_integer(X) andalso (A=<X) andalso (X=<B).
 
 % function for building tuple testing code
 -spec tuple_match([atom()],[type_definition_ast()],any())->function_ast().
