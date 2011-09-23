@@ -44,7 +44,7 @@ build_f({attribute,_L,type,{Type_name,Type_def,List_of_type_arg}})->
 %% @doc any()
 build_f(_,{var,_L,'_'},_)->{atom,1,true};
 
-%% @doc none() might be removed
+%% @doc none() might be removed / check if there is an atom "empty"
 build_f(_,{type,_L,none,[]},_)->{atom,1,false};
 
 %% @doc pid()
@@ -165,7 +165,7 @@ build_f(Param,{type,_L,tuple,any},_)->
 build_f(Param,{type,_L,tuple,[]},_)->
     {op,1,'andalso',
         {call,1,{atom,1,is_tuple},[{var,1,Param}]},
-        {op,24,'==',
+        {op,1,'==',
             {call,1,{atom,1,tuple_size},[{var,1,Param}]},
             {integer,1,0}
         }
@@ -182,7 +182,7 @@ build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
             {call,1,{'fun',1,{clauses,[{clause,1,[{var,1,Param}],[],[
 		 {match,1,
                      sheriff_string_generator:name_var_list(length(List_def)),
-                     {call,1,{atom,1,tuple_to_list},[{var,47,Param}]}
+                     {call,1,{atom,1,tuple_to_list},[{var,1,Param}]}
        	     	 },
 		 tuple_match(
 		     sheriff_string_generator:name_var_list_lookup(),
@@ -211,6 +211,8 @@ build_f(Param,{type,_L,nonempty_list,Type_def},List_of_type_arg)->
 
 %% ===========================================
 %% @doc Built-in type / Alias
+%% @TODO : when the structure will be ok, remove _V when they are useless
+%%         and replace then by [] (in calls, for mfa, string,...)
 
 % term()
 build_f(_,{type,_L,term,[]},_)->{atom,1,true};
@@ -281,7 +283,7 @@ build_f(Param,{type,_L,module,[]},_V)->
 % mfa()
 build_f(Param,{type,_L,mfa,[]},_V)->
     build_f(Param,{type,_L,tuple,
-        [{type,22,atom,[]},{type,22,atom,[]},{type,22,byte,[]}] 
+        [{type,1,atom,[]},{type,1,atom,[]},{type,1,byte,[]}] 
                     },_V);
 
 % node()
