@@ -22,15 +22,24 @@
 
 -spec parse_transform(Forms, options()) -> Forms when Forms :: forms().
 parse_transform(Forms, _Options) ->
+    %start an ets table for global variables
+    sheriff_string_generator:database(),
+    %get the module name
+    [_Module]=lists:foldl(
+            fun({attribute,_,module,Name},Name_list) -> [Name|Name_list];
+	       (_,Name_list)                         -> Name_list end,
+                        [],Forms),
+    %and save it in ets table
+    sheriff_string_generator:name_module(_Module),
+    %replaces sheriff:check calls
     New_forms=type_checking_f(Forms),
+    %builf type testing functions
     sheriff_check_call:main(New_forms,_Options).
 
 %% @doc This function genrate the AST code for static (and dynamic) type
 %% @doc testing code.
 -spec type_checking_f(forms())->forms().
 type_checking_f(Forms)->
-    %start an ets table for global variables
-    sheriff_string_generator:database(),
     %find all type definitions
     Type_fun=lists:filter( fun(X)->case X of
             {attribute,_,type,Type}->
@@ -42,25 +51,21 @@ type_checking_f(Forms)->
         fun(X)->sheriff_static_generator:build_f(X) end, Type_fun),
     %build the new forms
     New_forms=lists:append(Forms,New_fun),
-    Final_forms=export_type_definition(New_forms),
+    Final_forms=export_type_definition(Type_fun,New_forms),
     %io:format("after : ~p~n", [Final_forms]),
     Final_forms.
 
 %% @doc function for exporting types definitions
 %% @doc it just export the created functions for each type to export
--spec export_type_definition(forms())->forms().
-export_type_definition(List)->
-    %find the type that has to be exported
-    Type_to_export=lists:foldl(
-		fun({attribute,_L,export_type,List_type},Lst)->
-		          lists:append(List_type,Lst);
-                    (_,Lst)->Lst end,
-                [],List ),
-    %make the list of {fun,arrity}
+-spec export_type_definition(forms(),forms())->forms().
+export_type_definition(Type_fun,List)->
+    %change the type list in {fun,arrity}
     Fun_to_export=lists:map(
-            fun({Name,Arity})-> 
-    		{sheriff_string_generator:name_function(Name),(Arity+1)} end,
-    	    Type_to_export),
+        fun({attribute,_,type,{Type_name,_,List_of_type_arg}})-> 
+                {sheriff_string_generator:name_function(Type_name),
+                    length(List_of_type_arg)+2} 
+        end,
+        Type_fun),
     %add this list to the list of function to be export
     case lists:any(fun({attribute,_L,export,_List_fun})->true;
 		      (_)->false end,
