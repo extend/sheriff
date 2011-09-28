@@ -15,7 +15,8 @@
 
 -module(sheriff_string_generator).
 -export([database/0,register_type/1,name_function/1,name_var/0,name_var/1,
-        name_var_list/1,name_var_list_lookup/0]).
+        name_var_list/1,name_var_list_lookup/0,
+        name_module/1,name_module_lookup/0]).
 
 -type list_ast():: {nil,integer()}
 		|{cons,integer(),{var,integer(),atom()},list_ast()}.
@@ -76,3 +77,14 @@ name_var_list(N,List)->
 name_var_list_lookup()->
     [{_Key,List}]=ets:lookup(my_table,'sheriff_$_var_list'),
     List.
+
+%%save module name
+-spec name_module(atom())->true.
+name_module(_Module)->
+    true=ets:insert(my_table, {'sheriff_$_module', _Module}).
+
+%% Return module name
+-spec name_module_lookup()->atom().
+name_module_lookup()->
+    [{_Key,_Module}]=ets:lookup(my_table,'sheriff_$_module'),
+    _Module.
