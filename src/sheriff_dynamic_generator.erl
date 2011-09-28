@@ -14,80 +14,84 @@
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -module(sheriff_dynamic_generator).
--export([find_f/2]).
+-export([find_f/3]).
 
 
 -type type_definition_ast()::tuple().
 
--spec find_f(any(),type_definition_ast())->true|false.
+-spec find_f(atom(),any(),type_definition_ast())->true|false.
 
 % specific value of: atom() , integer() , float() , string()
 % add negative numbers
-find_f(Param,{atom,_L,Val})->
+find_f(_Module,Param,{atom,_L,Val})->
     Param=:=Val;
-find_f(Param,{integer,_L,Val})->
+find_f(_Module,Param,{integer,_L,Val})->
     Param=:=Val;
-find_f(Param,{float,_L,Val})->
+find_f(_Module,Param,{float,_L,Val})->
     Param=:=Val;
-find_f(Param,{string,_L,Val})->
+find_f(_Module,Param,{string,_L,Val})->
     Param=:=Val;
 
-find_f(_,{var,_L,'_'})->true;
+find_f(_Module,_,{var,_L,'_'})->true;
 
 % range  (ex: -10..10) 
-find_f(Param,{type,_,range,[{integer,_,Deb},{integer,_,Fin}]})->
+find_f(_Module,Param,{type,_,range,[{integer,_,Deb},{integer,_,Fin}]})->
     is_integer(Param) andalso (Deb=<Param) andalso (Param=<Fin);
-find_f(Param,{type,_,range,[{op,_,'-',{integer,_,Deb}},{integer,_,Fin}]})->
+find_f(_Module,Param,{type,_,range,[{op,_,'-',{integer,_,Deb}},
+                                                    {integer,_,Fin}]})->
     is_integer(Param) andalso (Param=<Deb) andalso (Param=<Fin);
-find_f(Param,{type,_,range,[{integer,_,Deb},{op,_,'-',{integer,_,Fin}}]})->
+find_f(_Module,Param,{type,_,range,[{integer,_,Deb},
+                                            {op,_,'-',{integer,_,Fin}}]})->
     is_integer(Param) andalso (Deb=<Param) andalso (Fin=<Param);
-find_f(Param,{type,_,range,[{op,_,'-',{integer,_,Deb}},
+find_f(_Module,Param,{type,_,range,[{op,_,'-',{integer,_,Deb}},
                                             {op,_,'-',{integer,_,Fin}}]})->
     is_integer(Param) andalso (Param=<Deb) andalso (Fin=<Param);
 
 % atom() , integer() , float() , binary()
 % to change if thing like -type int(A)::integer(A)|integer(5).
-find_f(Param,{type,_L,atom,[]})->
+find_f(_Module,Param,{type,_L,atom,[]})->
     is_atom(Param);
-find_f(Param,{type,_L,integer,[]})->
+find_f(_Module,Param,{type,_L,integer,[]})->
     is_integer(Param);
-find_f(Param,{type,_L,float,[]})->
+find_f(_Module,Param,{type,_L,float,[]})->
     is_float(Param);
-find_f(Param,{type,_L,binary,[]})->
+find_f(_Module,Param,{type,_L,binary,[]})->
     is_binary(Param);
 
 % union
-find_f(_,{type,_L,union,[]})->false;
-find_f(Param,{type,_L,union,[H|T]})->
-    (find_f(Param,H)) orelse (find_f(Param,{type,_L,union,T}));
+find_f(_Module,_,{type,_L,union,[]})->false;
+find_f(_Module,Param,{type,_L,union,[H|T]})->
+    (find_f(_Module,Param,H)) orelse (find_f(_Module,Param,{type,_L,union,T}));
 
 % tuple 
-find_f(Param,{type,_L,tuple,any})->
+find_f(_Module,Param,{type,_L,tuple,any})->
     is_tuple(Param);
-find_f(Param,{type,_L,tuple,List_def})->
+find_f(_Module,Param,{type,_L,tuple,List_def})->
     is_tuple(Param) 
     andalso (length(tuple_to_list(Param))==length(List_def))
-    andalso lists:all( fun({Par,Def})->(find_f(Par,Def)) end,
+    andalso lists:all( fun({Par,Def})->(find_f(_Module,Par,Def)) end,
                     lists:zip(tuple_to_list(Param),List_def) );
 
 % list
-find_f(Param,{type,_L,list,[]})->
+find_f(_Module,Param,{type,_L,list,[]})->
     is_list(Param);
-find_f(Param,{type,_L,list,[Type_def]})->
+find_f(_Module,Param,{type,_L,list,[Type_def]})->
     is_list(Param) 
-    andalso lists:all( fun(X)->(find_f(X,Type_def)) end,
+    andalso lists:all( fun(X)->(find_f(_Module,X,Type_def)) end,
                     Param );
 
 % @TODO apply/2 doesn't works as expected .For using types defined by the user.
-%find_f(Param,{type,_L,Type_name,Type_param})->
-%   apply(sheriff_string_generator:name_function(Type_name),[Param|Type_param]);
+find_f(_Module,Param,{type,_L,Type_name,Type_param})->
+    apply(_Module,
+        sheriff_string_generator:name_function(Type_name),
+        [_Module|[Param|Type_param]]);
 
 % For using types exported by other modules.
 % NOTE:
 % -these modules should have been compile using the {parse_transform,sheriff}
 % compiling options, with "same names" for the function prefix(name_function())
-find_f(Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
+find_f(_Module,Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
 		Type_param] })->
     apply(Type_module,
         sheriff_string_generator:name_function(Type_name),
-	[Param|Type_param]).
+	[_Module|[Param|Type_param]]).
