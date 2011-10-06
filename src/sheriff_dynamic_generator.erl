@@ -80,7 +80,7 @@ find_f(_Module,Param,{type,_L,list,[Type_def]})->
     andalso lists:all( fun(X)->(find_f(_Module,X,Type_def)) end,
                     Param );
 
-% @TODO apply/2 doesn't works as expected .For using types defined by the user.
+% For using types defined by the user.
 find_f(_Module,Param,{type,_L,Type_name,Type_param})->
     apply(_Module,
         sheriff_string_generator:name_function(Type_name),
