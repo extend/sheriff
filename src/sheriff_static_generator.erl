@@ -42,6 +42,7 @@ build_f({attribute,_L,type,{Type_name,Type_def,List_of_type_arg}})->
 -spec build_f(atom(),type_definition_ast(),[any()])->function_ast().
 
 %% @doc any()
+build_f(_,{type,_L,any,[]},_)->{atom,1,true};
 build_f(_,{var,_L,'_'},_)->{atom,1,true};
 
 %% @doc none() might be removed / check if there is an atom "empty"
@@ -220,8 +221,8 @@ build_f(_,{type,_L,term,[]},_)->{atom,1,true};
 % boolean()
 build_f(Param,{type,_L,boolean,[]},_)->
     {op,1,'orelse',
-        {op,1,'/=',{var,1,Param},{atom,1,true}},
-        {op,1,'/=',{var,1,Param},{atom,1,false}}
+        {op,1,'=:=',{var,1,Param},{atom,1,true}},
+        {op,1,'=:=',{var,1,Param},{atom,1,false}}
     };
 
 % byte()
@@ -303,7 +304,7 @@ build_f(Param,{type,_L,no_return,[]},_V)->
 
 %% ===========================================
 
-% for record
+% @doc record
 build_f(Param,{type,_L,record,[{atom,_,Record_name}] },_V)->
     {call,1,{atom,1,is_record},[{var,1,Param},{atom,1,Record_name}]};
 
@@ -317,8 +318,9 @@ build_f(Param,{var,_L,Val},_)->
 
 %% @doc UserDefined type: In order to use the type defined by the user
 build_f(Param,{type,_L,Type_name,Type_param},_)->
-    Type_var=lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end,
-                   Type_param ),
+    Type_var=lists:map( 
+            fun(X)->bound_var(erl_syntax:revert(erl_syntax:abstract(X))) end,
+            Type_param ),
     %% don't use a remote call with the module name _Module
     case (ets:lookup(my_table,Type_name)==[{Type_name,length(Type_param)}]) of
         true->{call,1,{atom,1,
@@ -329,13 +331,13 @@ build_f(Param,{type,_L,Type_name,Type_param},_)->
 
 % @doc UserDefined type:
 % In order to use the type defined by the user, which are in other modules
-% NOTE:
-% -these modules should have been compile using the {parse_transform,sheriff}
-% compiling options, with the same module version for the sheriff module
+% NOTE: these modules should have been compiled using the 
+% {parse_transform,sheriff} compiling options
 build_f(Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
 		Type_param] },_)->
-    Type_var=lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end,
-                   Type_param ),
+    Type_var=lists:map( 
+           fun(X)->bound_var(erl_syntax:revert(erl_syntax:abstract(X))) end,
+           Type_param ),
     {call,1,
         {remote,1,{atom,1,Type_module},
 	    {atom,1,sheriff_string_generator:name_function(Type_name)}},
@@ -345,7 +347,6 @@ build_f(Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
 %%---------------------------------------------------
 %%---------------------------------------------------
 
-
 % function for building tuple testing code
 -spec tuple_match([atom()],[type_definition_ast()],any())->function_ast().
 tuple_match([],[],_)->{atom,1,true};
@@ -354,3 +355,13 @@ tuple_match([Param|Suite],[Type_def|List_suite],List_of_type_arg)->
         build_f(Param,Type_def,List_of_type_arg),
 	tuple_match(Suite,List_suite,List_of_type_arg)
     }.
+
+% @Doc When calls to other functions is made, parameters are "abstracted",
+% and so are the variables,what prevent them from being bound with
+% their value.
+-spec bound_var(any())->any().
+bound_var({tuple,_,[{atom,_,var},{integer,_,_},{atom,_,Var_name}]})->
+    {var,1,Var_name};
+bound_var(L) when is_list(L)-> lists:map(fun bound_var/1,L);
+bound_var(T) when is_tuple(T)->list_to_tuple(bound_var(tuple_to_list(T)));
+bound_var(All)->All.
