@@ -14,7 +14,13 @@
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -module(sheriff).
--export([parse_transform/2]).
+-export([parse_transform/2,check/2]).
+
+% This function is not supposed to be called.
+% It is just for dialyzer's code testing
+-spec check(any(),any())-> true | false.
+check("Sheriff_$_test : Hello","World")->true;
+check(_,_)->false.
 
 -type form() :: any().
 -type forms() :: [form()].
