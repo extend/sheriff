@@ -54,6 +54,8 @@ replace(_, Form, _Ctxt, Acc) ->
 %% @doc Build an Erlang tree of a call to the generate function.
 -spec build(form(), form(), integer()) -> form().
 build(Operator, Var, PosCall) ->
+        _Module=erl_syntax:revert(erl_syntax:abstract(
+            sheriff_string_generator:name_module_lookup())),
 	case erl_syntax:type(Operator) of
 		application ->
 			Op = erl_syntax:application_operator(Operator),
@@ -61,9 +63,9 @@ build(Operator, Var, PosCall) ->
 			{Mod,FunName} = get_new_name(Op),
 			NewOp = build_atom(FunName),
 			if Args == [] ->
-				NewArgs = [Var];
+				NewArgs = [_Module,Var];
 			true ->
-				NewArgs = [Var|make_ast(erl_prettypr:format(Operator))]
+				NewArgs = [_Module,Var|make_ast(erl_prettypr:format(Operator))]
 			end,
 			build_call(Mod,NewOp,NewArgs,PosCall);
 		_ ->

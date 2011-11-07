@@ -31,8 +31,8 @@ build_f({attribute,_L,type,{Type_name,Type_def,List_of_type_arg}})->
     Param=sheriff_string_generator:name_var(),
     {function,1,
         sheriff_string_generator:name_function(Type_name),
-        length(List_of_type_arg)+1,
-        [{clause,1, [{var,1,Param}|List_of_type_arg],%KEEP List_of_type_arg here
+        length(List_of_type_arg)+2,
+        [{clause,1, [{var,1,'_Module'}|[{var,1,Param}|List_of_type_arg]],%KEEP List_of_type_arg here 
                     [],
                     [build_f(Param,Type_def,List_of_type_arg)]
         }]
@@ -42,9 +42,10 @@ build_f({attribute,_L,type,{Type_name,Type_def,List_of_type_arg}})->
 -spec build_f(atom(),type_definition_ast(),[any()])->function_ast().
 
 %% @doc any()
+build_f(_,{type,_L,any,[]},_)->{atom,1,true};
 build_f(_,{var,_L,'_'},_)->{atom,1,true};
 
-%% @doc none() might be removed
+%% @doc none() might be removed / check if there is an atom "empty"
 build_f(_,{type,_L,none,[]},_)->{atom,1,false};
 
 %% @doc pid()
@@ -165,7 +166,7 @@ build_f(Param,{type,_L,tuple,any},_)->
 build_f(Param,{type,_L,tuple,[]},_)->
     {op,1,'andalso',
         {call,1,{atom,1,is_tuple},[{var,1,Param}]},
-        {op,24,'==',
+        {op,1,'==',
             {call,1,{atom,1,tuple_size},[{var,1,Param}]},
             {integer,1,0}
         }
@@ -182,7 +183,7 @@ build_f(Param,{type,_L,tuple,List_def},List_of_type_arg)->
             {call,1,{'fun',1,{clauses,[{clause,1,[{var,1,Param}],[],[
 		 {match,1,
                      sheriff_string_generator:name_var_list(length(List_def)),
-                     {call,1,{atom,1,tuple_to_list},[{var,47,Param}]}
+                     {call,1,{atom,1,tuple_to_list},[{var,1,Param}]}
        	     	 },
 		 tuple_match(
 		     sheriff_string_generator:name_var_list_lookup(),
@@ -211,6 +212,8 @@ build_f(Param,{type,_L,nonempty_list,Type_def},List_of_type_arg)->
 
 %% ===========================================
 %% @doc Built-in type / Alias
+%% @TODO : when the structure will be ok, remove _V when they are useless
+%%         and replace then by [] (in calls, for mfa, string,...)
 
 % term()
 build_f(_,{type,_L,term,[]},_)->{atom,1,true};
@@ -218,8 +221,8 @@ build_f(_,{type,_L,term,[]},_)->{atom,1,true};
 % boolean()
 build_f(Param,{type,_L,boolean,[]},_)->
     {op,1,'orelse',
-        {op,1,'/=',{var,1,Param},{atom,1,true}},
-        {op,1,'/=',{var,1,Param},{atom,1,false}}
+        {op,1,'=:=',{var,1,Param},{atom,1,true}},
+        {op,1,'=:=',{var,1,Param},{atom,1,false}}
     };
 
 % byte()
@@ -281,7 +284,7 @@ build_f(Param,{type,_L,module,[]},_V)->
 % mfa()
 build_f(Param,{type,_L,mfa,[]},_V)->
     build_f(Param,{type,_L,tuple,
-        [{type,22,atom,[]},{type,22,atom,[]},{type,22,byte,[]}] 
+        [{type,1,atom,[]},{type,1,atom,[]},{type,1,byte,[]}] 
                     },_V);
 
 % node()
@@ -301,7 +304,7 @@ build_f(Param,{type,_L,no_return,[]},_V)->
 
 %% ===========================================
 
-% for record
+% @doc record
 build_f(Param,{type,_L,record,[{atom,_,Record_name}] },_V)->
     {call,1,{atom,1,is_record},[{var,1,Param},{atom,1,Record_name}]};
 
@@ -309,37 +312,40 @@ build_f(Param,{type,_L,record,[{atom,_,Record_name}] },_V)->
 build_f(Param,{var,_L,Val},_)->
     {call,1,
         {remote,1,{atom,1,sheriff_dynamic_generator},{atom,1,find_f}},
-        [{var,1,Param},{var,1,Val}]
+        [{var,1,'_Module'},{var,1,Param},{var,1,Val}]
+
     };
 
 %% @doc UserDefined type: In order to use the type defined by the user
 build_f(Param,{type,_L,Type_name,Type_param},_)->
-    Type_var=lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end,
-                   Type_param ),
+    Type_var=lists:map( 
+            fun(X)->bound_var(erl_syntax:revert(erl_syntax:abstract(X))) end,
+            Type_param ),
+    %% don't use a remote call with the module name _Module
     case (ets:lookup(my_table,Type_name)==[{Type_name,length(Type_param)}]) of
         true->{call,1,{atom,1,
 		sheriff_string_generator:name_function(Type_name)},
-	        [{var,1,Param}|Type_var]};
+                [{var,1,'_Module'}|[{var,1,Param}|Type_var]]};
         false-> error("undifined type / not supported yet")
     end;
 
 % @doc UserDefined type:
 % In order to use the type defined by the user, which are in other modules
-% NOTE:
-% -these modules should have been compile using the {parse_transform,sheriff}
-% compiling options, with the same module version for the sheriff module
+% NOTE: these modules should have been compiled using the 
+% {parse_transform,sheriff} compiling options
 build_f(Param,{remote_type,_L,[{atom,_,Type_module},{atom,_,Type_name},
 		Type_param] },_)->
-    Type_var=lists:map( fun(X)->erl_syntax:revert(erl_syntax:abstract(X)) end,
-                   Type_param ),
+    Type_var=lists:map( 
+           fun(X)->bound_var(erl_syntax:revert(erl_syntax:abstract(X))) end,
+           Type_param ),
     {call,1,
         {remote,1,{atom,1,Type_module},
-	     {atom,1,sheriff_string_generator:name_function(Type_name)}},
-              [{var,1,Param}|Type_var]
+	    {atom,1,sheriff_string_generator:name_function(Type_name)}},
+            [{var,1,'_Module'}|[{var,1,Param}|Type_var]]
+
     }.
 %%---------------------------------------------------
 %%---------------------------------------------------
-
 
 % function for building tuple testing code
 -spec tuple_match([atom()],[type_definition_ast()],any())->function_ast().
@@ -349,3 +355,13 @@ tuple_match([Param|Suite],[Type_def|List_suite],List_of_type_arg)->
         build_f(Param,Type_def,List_of_type_arg),
 	tuple_match(Suite,List_suite,List_of_type_arg)
     }.
+
+% @Doc When calls to other functions is made, parameters are "abstracted",
+% and so are the variables,what prevent them from being bound with
+% their value.
+-spec bound_var(any())->any().
+bound_var({tuple,_,[{atom,_,var},{integer,_,_},{atom,_,Var_name}]})->
+    {var,1,Var_name};
+bound_var(L) when is_list(L)-> lists:map(fun bound_var/1,L);
+bound_var(T) when is_tuple(T)->list_to_tuple(bound_var(tuple_to_list(T)));
+bound_var(All)->All.
