@@ -1,3 +1,8 @@
+%% Copyright (c) 2012, Loïc Hoguin <essen@ninenines.eu>
+%%
+%% Based on the awesome original work and research
+%% by William Dang and Hamza Mahmood.
+%%
 %% Copyright (c) 2011, William Dang <malliwi@hotmail.com>,
 %%                     Hamza Mahmood <zar_roc@hotmail.fr>
 %%
@@ -16,4 +21,4 @@
 {application, sheriff,
 	[{description, "Parse transform for type based validation."},
 	 {applications, [kernel, stdlib]},
-	 {vsn, "0.1.0"}]}.
+	 {vsn, "0.2.0"}]}.

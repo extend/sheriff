@@ -1,0 +1,5 @@
+.sheriff_dialyzer.plt
+deps
+ebin
+logs
+test/*.beam
