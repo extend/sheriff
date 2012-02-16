@@ -122,6 +122,9 @@ build_type({remote_type, _, [{atom, _, Module}, {atom, _, Type}, Args]},
 	Exprs;
 build_type({type, L, any, []}, _, _) ->
 	{atom, L, true};
+build_type({type, L, arity, []}, Module, Value) ->
+	build_type({type, L, range, [{integer, L, 0}, {integer, L, 255}]},
+		Module, Value);
 build_type({type, _, atom, []}, _, Value) ->
 	[Exprs] = codegen:exprs(fun() ->
 		is_atom({'$form', Value})
@@ -149,21 +152,22 @@ build_type({type, _, binary, [{integer, _, MinSize}, {integer, _, Div}]},
 			rem {'$var', Div} =:= 0
 	end),
 	Exprs;
+build_type({type, _, bitstring, []}, _, Value) ->
+	[Exprs] = codegen:exprs(fun() ->
+		is_bitstring({'$form', Value})
+	end),
+	Exprs;
 build_type({type, _, boolean, []}, _, Value) ->
 	[Exprs] = codegen:exprs(fun() ->
 		is_boolean({'$form', Value})
 	end),
 	Exprs;
-build_type({type, _, byte, []}, _, Value) ->
-	[Exprs] = codegen:exprs(fun() ->
-		0 =< {'$form', Value} andalso {'$form', Value} =< 255
-	end),
-	Exprs;
-build_type({type, _, char, []}, _, Value) ->
-	[Exprs] = codegen:exprs(fun() ->
-		0 =< {'$form', Value} andalso {'$form', Value} =< 16#10ffff
-	end),
-	Exprs;
+build_type({type, L, byte, []}, Module, Value) ->
+	build_type({type, L, range, [{integer, L, 0}, {integer, L, 255}]},
+		Module, Value);
+build_type({type, L, char, []}, Module, Value) ->
+	build_type({type, L, range, [{integer, L, 0}, {integer, L, 16#10ffff}]},
+		Module, Value);
 build_type({type, _, float, []}, _, Value) ->
 	[Exprs] = codegen:exprs(fun() ->
 		is_float({'$form', Value})

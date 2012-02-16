@@ -31,27 +31,76 @@
 %% These two types are just used to check we can compile any type check.
 -type my_type() :: 1 | 3 | 5 | 7 | 9.
 -type all() ::
-	%% Base types.
-	any() | none() |
-	pid() | port() | reference() |
-	atom() | some_atom |
-	binary() | <<>> | <<_:4>> | <<_:_*8>> | <<_:4, _:_*8>> |
-	float() | 
-	fun() | fun((...) -> integer()) | fun(() -> integer()) |
+	%% Literal values and notations.
+	_ | %% any()
+	an_atom |
+	<<>> |
+	<< _:3 >> |
+	<< _:_*5 >> |
+	<< _:3, _:_*5 >> |
+	-42 |
+	42 |
+	[] |
+	[integer()] |
+	[byte(), ...] |
+	-10..-5 |
+	5..100 |
+	{} |
+	{atom(), integer(), float()} |
+
+	%% Built-in types.
+	any() |
+	arity() | %% 0..255
+	atom() |
+	binary() | %% << _:0, _:_*8 >>
+	binary(3, 5) | %% << _:3, _:_*5 >>
+	bitstring() |
+	boolean() | %% true | false
+	byte() | %% 0..255
+	char() | %% 0..16#10ffff
+	float() |
+	fun() |
+	fun(() -> integer()) |
+	fun((...) -> integer()) |
 	fun((atom(), tuple()) -> integer()) |
-	integer() | -42 | 42 | -10..-5 | 1..100 |
-	list() | [] | list(integer()) | [integer()] |
-	nonempty_list() | [byte(), ...] |
+	integer() |
+%	iodata() | %% @todo
+%	iolist() | %% @todo
+	list() | %% [any()]
+	list(integer()) | %% [integer()]
 	maybe_improper_list() |
-	tuple() | {} | {atom(), integer(), float()} |
-	%% Aliases.
-	term() | _ | boolean() | byte() | char() |
-	non_neg_integer() | pos_integer() | neg_integer() | number() |
-	string() | nonempty_string() |
-%% @todo	iolist() |
-	module() |
-	mfa() |
-	node() | timeout() | no_return() |
+%	maybe_improper_list(atom(), integer()) | %% @todo
+	mfa() | %% {atom(), atom(), arity()}
+	module() | %% atom() only, because tuple() is deprecated
+	neg_integer() | %% ..-1
+	nil() | %% []
+	no_return() | %% none()
+	node() | %% atom()
+	none() |
+	nonempty_list() | %% [any(), ...]
+	nonempty_list(byte()) | %% [byte(), ...]
+%	nonempty_improper_list(atom(), integer()) | %% @todo
+%	nonempty_maybe_improper_list() | %% @todo
+%	nonempty_maybe_improper_list(atom(), integer()) | %% @todo
+	nonempty_string() | %% [byte(), ...]
+	non_neg_integer() | %% 0..
+	number() |
+	pid() |
+	port() |
+	pos_integer() | %% 1..
+	range(5, 100) | %% 5..100
+	reference() |
+	string() | %% [byte()]
+	term() | %% any()
+	timeout() | %% 0.. | infinity
+	tuple() |
+	tuple(atom()) | %% {atom()}
+	tuple(atom(), integer()) | %% {atom(), integer()}
+	tuple(atom(), integer(), float()) | %% {atom(), integer(), float()}
+
+	%% Variables.
+	%% A | B | C
+
 	%% User-defined records and types.
 	#my_record{} |
 	my_type().
