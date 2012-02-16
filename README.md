@@ -66,11 +66,27 @@ paint(Color, Object) ->
 	do_paint(Color, Object).
 ```
 
-Note that currently Sheriff does not accept built-in types as
+You can finally use the inline notation. You can specify any
+built-in, local or remote type in a string and pass it to
+sheriff:check/2.
+
+``` erlang
+paint(Color, Object) ->
+	true = sheriff:check(Color, "picasso_module:colors()"),
+	do_paint(Color, Object).
+
+erase(Pixels, Object) ->
+	true = sheriff:check(Pixels, "list({integer(), integer()})"),
+	do_erase(Pixels, Object).
+```
+
+Note that when passing atoms or tuples for the type to check
+against, Sheriff does not currently accept built-in types as
 arguments, only local or remote types. Also note that all types
 must be of arity 0, as sheriff:check/2 can only accept type
 names as argument at this time. This is a limitation only on
-the function call, not on the type specifications.
+the function call, not on the type specifications. You can use
+the inline notation to overcome it.
 
 ``` erlang
 %% This type cannot be passed to sheriff:check/2.

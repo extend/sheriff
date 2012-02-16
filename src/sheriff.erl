@@ -48,7 +48,7 @@ parse_transform(Forms, _Options) ->
 	Funcs = gen_check_funcs(Types, Module),
 	Forms2 = insert_funcs(Forms, Funcs, Types),
 	{Forms3, _} = parse_trans:depth_first(
-		fun replace_calls/4, undefined, Forms2, []),
+		fun replace_calls/4, Module, Forms2, []),
 	parse_trans:revert(Forms3).
 
 retrieve_types(attribute, Form, _, Acc) ->
@@ -410,15 +410,21 @@ insert_funcs(Forms, Funcs, Types) ->
 		end
 	end, Forms2, Types).
 
-replace_calls(application, Form, _Ctx, Acc) ->
+replace_calls(application, Form, _Ctx, ThisModule) ->
 	case erl_syntax_lib:analyze_application(Form) of
 		{sheriff, {check, 2}} ->
 			Pos = erl_syntax:get_pos(Form),
 			Args = erl_syntax:application_arguments(Form),
 			Vars = [hd(Args)],
-			[_, TypeVar] = parse_trans:revert(Args),
+			[CheckVar, TypeVar] = parse_trans:revert(Args),
 			Form2 = case TypeVar of
-				{tuple, _, [{atom, _, Module},{atom, _, Type}]} ->
+				{string, _, String} ->
+					{ok, Ts, _} = erl_scan:string(
+						"-type sheriff_string_arg() :: " ++ String ++ "."),
+					{ok, {attribute, _, type, {sheriff_string_arg, Type, []}}}
+						= erl_parse:parse_form(Ts),
+					build_type(Type, ThisModule, CheckVar);
+				{tuple, _, [{atom, _, Module}, {atom, _, Type}]} ->
 					FuncName = type_to_func_name(Type),
 					erl_syntax:application(erl_syntax:atom(Module),
 						erl_syntax:atom(FuncName), Vars);
@@ -427,12 +433,12 @@ replace_calls(application, Form, _Ctx, Acc) ->
 					erl_syntax:application(erl_syntax:atom(FuncName), Vars)
 			end,
 			Form3 = erl_syntax:set_pos(Form2, Pos),
-			{Form3, Acc};
+			{Form3, ThisModule};
 		_ ->
-			{Form, Acc}
+			{Form, ThisModule}
 	end;
-replace_calls(_, Form, _Ctx, Acc) ->
-	{Form, Acc}.
+replace_calls(_, Form, _Ctx, ThisModule) ->
+	{Form, ThisModule}.
 
 type_to_func_name(Type) when is_atom(Type) ->
 	list_to_atom("sheriff_$_type_$_" ++ atom_to_list(Type)).

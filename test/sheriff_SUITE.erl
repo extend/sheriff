@@ -9,7 +9,8 @@
 	t_custom_m/1, t_custom_n/1, t_custom_o/1, t_custom_p/1,
 	t_custom_q/1, t_custom_r/1, t_custom_s/1,
 	t_external_a/1, t_external_b/1, t_external_c/1,
-	t_external_d/1, t_external_e/1]).
+	t_external_d/1, t_external_e/1,
+	t_string_a/1]).
 
 -include_lib("common_test/include/ct.hrl").
 
@@ -117,7 +118,8 @@ groups() ->
 		t_custom_m, t_custom_n, t_custom_o, t_custom_p,
 		t_custom_q, t_custom_r, t_custom_s,
 		t_external_a, t_external_b, t_external_c,
-		t_external_d, t_external_e
+		t_external_d, t_external_e,
+		t_string_a
 	]}].
 
 t_all(_) ->
@@ -284,3 +286,9 @@ t_external_e(_) ->
 	true = sheriff:check({atom, 42}, external_e),
 	true = sheriff:check(atom, external_e),
 	false = sheriff:check({4.2, 42}, external_e).
+
+t_string_a(_) ->
+	true = sheriff:check([a, b, c], "list(atom())"),
+	true = sheriff:check(test, "external_type:a()"),
+	true = sheriff:check([1, 2, 3], "list_of(integer())"),
+	false = sheriff:check({a, b}, "{atom(), integer()}").
