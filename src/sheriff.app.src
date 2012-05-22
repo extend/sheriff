@@ -21,4 +21,4 @@
 {application, sheriff,
 	[{description, "Parse transform for type based validation."},
 	 {applications, [kernel, stdlib]},
-	 {vsn, "0.2.0"}]}.
+	 {vsn, "0.4.0"}]}.
