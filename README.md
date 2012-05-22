@@ -58,6 +58,20 @@ paint(Color, Object) ->
 	do_paint(Color, Object).
 ```
 
+You can check records. All the typed record values will be
+checked, along with making sure the value is a record of the
+expected type. To check for recordness, you must first define a
+type specifically for the record.
+
+``` erlang
+-type paintable_object() :: #paintable_object{}.
+
+paint(Color, Object) ->
+	true = sheriff:check(Color, colors),
+	true = sheriff:check(Object, paintable_object),
+    do_paint(Color, Object).
+```
+
 You can also check against a remote type.
 
 ``` erlang
