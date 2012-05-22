@@ -92,13 +92,17 @@ build_exprs([Type|Tail], Module, Value, Acc) ->
 	build_exprs(Tail, Module, Value, [Expr|Acc]).
 
 build_record_exprs(Fields, Module, Value) ->
-	[build_union(build_record_fields(Fields, Module, Value, 2, []))].
+	[build_intersection(build_record_fields(Fields, Module, Value, 2, []))].
 
 build_record_fields([], _, _, _, Acc) ->
 	lists:reverse(Acc);
+%% Ignore untyped record fields.
+build_record_fields([Field|Tail], Module, Value, Pos, Acc)
+		when element(1, Field) =:= record_field ->
+	build_record_fields(Tail, Module, Value, Pos + 1, Acc);
 build_record_fields([Field|Tail], Module, Value, Pos, Acc) ->
 	Expr = build_record_field(Field, Module, Value, Pos),
-	build_record_fields(Tail, Module, Value, Pos, [Expr|Acc]).
+	build_record_fields(Tail, Module, Value, Pos + 1, [Expr|Acc]).
 
 build_record_field({typed_record_field, _, Type}, Module, Value, Pos) ->
 	[Elem] = codegen:exprs(fun() ->
@@ -386,6 +390,16 @@ build_tuple_element(Type, Module, Value, N) ->
 		element({'$var', N}, {'$form', Value})
 	end),
 	build_type(Type, Module, Elem).
+
+build_intersection([Expr|Tail]) ->
+	build_intersection(Tail, Expr).
+build_intersection([], Expr) ->
+	Expr;
+build_intersection([Expr1|Tail], Expr2) ->
+	[Intersection] = codegen:exprs(fun() ->
+		{'$form', Expr1} andalso {'$form', Expr2}
+	end),
+	build_intersection(Tail, Intersection).
 
 build_union([Expr|Tail]) ->
 	build_union(Tail, Expr).

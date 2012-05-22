@@ -10,12 +10,14 @@
 	t_custom_q/1, t_custom_r/1, t_custom_s/1,
 	t_external_a/1, t_external_b/1, t_external_c/1,
 	t_external_d/1, t_external_e/1,
+	t_record_a/1,
 	t_string_a/1]).
 
 -include_lib("common_test/include/ct.hrl").
 
 %% Export the types just to get rid of warnings.
 -export_type([
+	my_record/0,
 	my_type/0, all/0,
 	a/0, b/0, c/0, d/0, e/0, f/0, g/0, h/0,
 	i/0, j/0, k/0, l/0, m/0, n/0, o/0, p/0,
@@ -26,8 +28,11 @@
 -record(my_record, {
 	id :: integer(),
 	value = 2 :: integer(),
-	bad_default = undefined :: integer()
+	bad_default = undefined :: integer(),
+	no_type = undefined,
+	no_type_no_default
 }).
+-type my_record() :: #my_record{}.
 
 %% These two types are just used to check we can compile any type check.
 -type my_type() :: 1 | 3 | 5 | 7 | 9.
@@ -119,6 +124,7 @@ groups() ->
 		t_custom_q, t_custom_r, t_custom_s,
 		t_external_a, t_external_b, t_external_c,
 		t_external_d, t_external_e,
+		t_record_a,
 		t_string_a
 	]}].
 
@@ -286,6 +292,15 @@ t_external_e(_) ->
 	true = sheriff:check({atom, 42}, external_e),
 	true = sheriff:check(atom, external_e),
 	false = sheriff:check({4.2, 42}, external_e).
+
+t_record_a(_) ->
+	true = sheriff:check(#my_record{id=123, bad_default=456,
+		no_type=a, no_type_no_default={1, 2, 3}}, my_record),
+	false = sheriff:check({wrong_rec, 123, 2, 456, a, {1, 2, 3}}, my_record),
+	false = sheriff:check(#my_record{}, my_record),
+	false = sheriff:check(#my_record{id=123}, my_record),
+	false = sheriff:check({}, my_record),
+	false = sheriff:check(123, my_record).
 
 t_string_a(_) ->
 	true = sheriff:check([a, b, c], "list(atom())"),
