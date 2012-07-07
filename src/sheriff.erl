@@ -110,6 +110,9 @@ build_record_field({typed_record_field, _, Type}, Module, Value, Pos) ->
 	end),
 	build_type(Type, Module, Elem).
 
+%% Extract type information from annotated types.
+build_type({ann_type, _, [{var, _, _}, Type]}, Module, Value) ->
+	build_type(Type, Module, Value);
 build_type(Expr = {atom, _, _}, _, Value) ->
 	build_identity(Expr, Value);
 build_type(Expr = {integer, _, _}, _, Value) ->

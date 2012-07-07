@@ -7,7 +7,7 @@
 	t_custom_e/1, t_custom_f/1, t_custom_g/1, t_custom_h/1,
 	t_custom_i/1, t_custom_j/1, t_custom_k/1, t_custom_l/1,
 	t_custom_m/1, t_custom_n/1, t_custom_o/1, t_custom_p/1,
-	t_custom_q/1, t_custom_r/1, t_custom_s/1,
+	t_custom_q/1, t_custom_r/1, t_custom_s/1, t_custom_t/1,
 	t_external_a/1, t_external_b/1, t_external_c/1,
 	t_external_d/1, t_external_e/1,
 	t_record_a/1,
@@ -21,7 +21,7 @@
 	my_type/0, all/0,
 	a/0, b/0, c/0, d/0, e/0, f/0, g/0, h/0,
 	i/0, j/0, k/0, l/0, m/0, n/0, o/0, p/0,
-	q/0, r/0, s/0,
+	q/0, r/0, s/0, t/0,
 	external_b/0, external_c/0, external_d/0,
 	external_e/0]).
 
@@ -107,6 +107,9 @@
 	%% Variables.
 	%% A | B | C
 
+	%% Annotated types.
+	{Key :: atom(), Value :: any()} |
+
 	%% User-defined records and types.
 	#my_record{} |
 	my_type().
@@ -121,7 +124,7 @@ groups() ->
 		t_custom_e, t_custom_f, t_custom_g, t_custom_h,
 		t_custom_i, t_custom_j, t_custom_k, t_custom_l,
 		t_custom_m, t_custom_n, t_custom_o, t_custom_p,
-		t_custom_q, t_custom_r, t_custom_s,
+		t_custom_q, t_custom_r, t_custom_s, t_custom_t,
 		t_external_a, t_external_b, t_external_c,
 		t_external_d, t_external_e,
 		t_record_a,
@@ -260,6 +263,15 @@ t_custom_s(_) ->
 	true = sheriff:check([2, 3|[]], s),
 	true = sheriff:check([2|3], s),
 	false = sheriff:check(atom, s).
+
+-type t() :: {Key :: atom(), Value :: any()}.
+t_custom_t(_) ->
+	true = sheriff:check({key, value}, t),
+	true = sheriff:check({key, [[[<<"list">>]]]}, t),
+	false = sheriff:check({key}, t),
+	false = sheriff:check({key, value, more}, t),
+	false = sheriff:check({<<"key">>, <<"value">>}, t),
+	false = sheriff:check(123, t).
 
 %% Note that external_type is the name of the module, not a keyword.
 t_external_a(_) ->
