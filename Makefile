@@ -26,7 +26,7 @@ build-plt:
 		--apps kernel stdlib
 
 dialyze:
-	@$(DIALYZER) --src src --plt .sheriff_dialyzer.plt --no_native \
+	@ERL_LIBS=deps $(DIALYZER) --src src --plt .sheriff_dialyzer.plt --no_native \
 		-Werror_handling -Wrace_conditions -Wunmatched_returns # -Wunderspecs
 
 docs:
