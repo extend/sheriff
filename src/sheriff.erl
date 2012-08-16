@@ -415,7 +415,8 @@ build_union([Expr1|Tail], Expr2) ->
 	build_union(Tail, Union).
 
 insert_funcs(Forms, Funcs, Types) ->
-	Forms2 = parse_trans:do_insert_forms(below, Funcs, Forms, []),
+	Forms2 = parse_trans:do_insert_forms(below, Funcs, Forms,
+		parse_trans:initial_context(Forms, [])),
 	lists:foldl(fun({Type, _, Args}, FormsAcc) ->
 		case Type of
 			{record, _} ->
