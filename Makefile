@@ -23,7 +23,7 @@ ct:
 
 build-plt:
 	@$(DIALYZER) --build_plt --output_plt .sheriff_dialyzer.plt \
-		--apps kernel stdlib
+		--apps kernel stdlib syntax_tools deps/*
 
 dialyze:
 	@ERL_LIBS=deps $(DIALYZER) --src src --plt .sheriff_dialyzer.plt --no_native \
