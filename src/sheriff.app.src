@@ -18,7 +18,11 @@
 %% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-{application, sheriff,
-	[{description, "Parse transform for type based validation."},
-	 {applications, [kernel, stdlib]},
-	 {vsn, "0.4.1"}]}.
+{application, sheriff, [
+	{id, "Sheriff"},
+	{description, "Parse transform for type based validation."},
+	{sub_description, "Sheriff validates data dynamically "
+		"using Erlang's type system with no extra code required."},
+	{vsn, "0.4.1"},
+	{applications, [kernel, stdlib]}
+]}.
