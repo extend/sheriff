@@ -6,3 +6,6 @@
 
 -export_type([b/2]).
 -type b(A, B) :: atom() | {A, B}.
+
+-export_type([c/0]).
+-type c() :: any().

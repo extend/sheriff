@@ -73,6 +73,17 @@ gen_check_funcs([{{record, Name}, Tree, []}|Tail], Module, Acc) ->
 		{'$form', Exprs}
 	end),
 	gen_check_funcs(Tail, Module, [Func|Acc]);
+%% Special cases for types aliasing any() or term() to avoid an
+%% unnecessary warning with the variable being unused.
+gen_check_funcs([{Name, {type, L, TypeName, []}, Args}|Tail], Module, Acc)
+		when TypeName =:= any; TypeName =:= term ->
+	FuncName = type_to_func_name(Name),
+	FuncArity = 1 + length(Args),
+	Value = {var, 0, '_Sheriff_check_value'},
+	Func = {function, 0, FuncName, FuncArity, [
+		{clause, 0, [Value|Args], [], [{atom, L, true}]}
+	]},
+	gen_check_funcs(Tail, Module, [Func|Acc]);
 gen_check_funcs([{Name, Tree, Args}|Tail], Module, Acc) ->
 	FuncName = type_to_func_name(Name),
 	FuncArity = 1 + length(Args),

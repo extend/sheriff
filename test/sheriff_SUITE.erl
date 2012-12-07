@@ -9,7 +9,7 @@
 	t_custom_m/1, t_custom_n/1, t_custom_o/1, t_custom_p/1,
 	t_custom_q/1, t_custom_r/1, t_custom_s/1, t_custom_t/1,
 	t_external_a/1, t_external_b/1, t_external_c/1,
-	t_external_d/1, t_external_e/1,
+	t_external_d/1, t_external_e/1, t_external_f/1,
 	t_record_a/1,
 	t_string_a/1]).
 
@@ -304,6 +304,11 @@ t_external_e(_) ->
 	true = sheriff:check({atom, 42}, external_e),
 	true = sheriff:check(atom, external_e),
 	false = sheriff:check({4.2, 42}, external_e).
+
+t_external_f(_) ->
+	true = sheriff:check(abc, "external_type:c()"),
+	true = sheriff:check(123, "external_type:c()"),
+	true = sheriff:check({[]}, "external_type:c()").
 
 t_record_a(_) ->
 	true = sheriff:check(#my_record{id=123, bad_default=456,
