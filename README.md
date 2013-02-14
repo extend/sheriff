@@ -16,6 +16,11 @@ Currently Sheriff should support all types excluding iolist/0
 and maybe_improper_list/2. The main limitation is that it can
 only work with modules compiled with the Sheriff parse transform.
 
+Also note that Sheriff does not work with opaque types. If you
+try to check an opaque type, the file won't compile. If you try
+to check a type which include an opaque type, a runtime error
+will be produced.
+
 Usage
 -----
 
