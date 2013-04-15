@@ -9,9 +9,9 @@
 	t_custom_m/1, t_custom_n/1, t_custom_o/1, t_custom_p/1,
 	t_custom_q/1, t_custom_r/1, t_custom_s/1, t_custom_t/1,
 	t_external_a/1, t_external_b/1, t_external_c/1,
-	t_external_d/1, t_external_e/1, t_external_f/1,
+	t_external_d/1, t_external_e/1, t_external_f/1, t_external_g/1,
 	t_record_a/1,
-	t_string_a/1]).
+	t_string_a/1,t_string_b/1]).
 
 -include_lib("common_test/include/ct.hrl").
 
@@ -126,9 +126,9 @@ groups() ->
 		t_custom_m, t_custom_n, t_custom_o, t_custom_p,
 		t_custom_q, t_custom_r, t_custom_s, t_custom_t,
 		t_external_a, t_external_b, t_external_c,
-		t_external_d, t_external_e,
+		t_external_d, t_external_e, t_external_f, t_external_g,
 		t_record_a,
-		t_string_a
+		t_string_a,t_string_b
 	]}].
 
 t_all(_) ->
@@ -300,21 +300,37 @@ t_external_d(_) ->
 
 -type external_e() :: external_type:b(a(), integer()).
 t_external_e(_) ->
+	Type = external_e,
 	true = sheriff:check({[list], 42}, external_e),
+	true = sheriff:check({[list], 42}, Type),
 	true = sheriff:check({atom, 42}, external_e),
 	true = sheriff:check(atom, external_e),
-	false = sheriff:check({4.2, 42}, external_e).
+	false = sheriff:check({4.2, 42}, external_e),
+	false = sheriff:check({4.2, 42}, Type).
 
 t_external_f(_) ->
+	Type = "external_type:c()",
 	true = sheriff:check(abc, "external_type:c()"),
+	true = sheriff:check(abc, Type),
 	true = sheriff:check(123, "external_type:c()"),
 	true = sheriff:check({[]}, "external_type:c()").
 
+t_external_g(_) ->
+	Type = {external_type, c},
+	true = sheriff:check(abc, {external_type, c}),
+	true = sheriff:check(abc, Type),
+	true = sheriff:check(123, {external_type, c}),
+	true = sheriff:check({[]}, {external_type, c}).
+
 t_record_a(_) ->
+	Type = my_record,
 	true = sheriff:check(#my_record{id=123, bad_default=456,
 		no_type=a, no_type_no_default={1, 2, 3}}, my_record),
+	true = sheriff:check(#my_record{id=123, bad_default=456,
+		no_type=a, no_type_no_default={1, 2, 3}}, Type),
 	false = sheriff:check({wrong_rec, 123, 2, 456, a, {1, 2, 3}}, my_record),
 	false = sheriff:check(#my_record{}, my_record),
+	false = sheriff:check(#my_record{}, Type),
 	false = sheriff:check(#my_record{id=123}, my_record),
 	false = sheriff:check({}, my_record),
 	false = sheriff:check(123, my_record).
@@ -324,3 +340,13 @@ t_string_a(_) ->
 	true = sheriff:check(test, "external_type:a()"),
 	true = sheriff:check([1, 2, 3], "list_of(integer())"),
 	false = sheriff:check({a, b}, "{atom(), integer()}").
+
+t_string_b(_) ->
+	Type = "list(atom())",
+	it_fails = try 
+		sheriff:check([a, b, c], Type)
+	catch error:badarg ->
+		it_fails
+	end.
+
+
