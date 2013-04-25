@@ -63,8 +63,29 @@ retrieve_types(_, Form, _, Acc) ->
 
 gen_check_funcs(Types, Module) ->
 	gen_check_funcs(Types, Module, []).
-gen_check_funcs([], _, Acc) ->
-	Acc;
+gen_check_funcs([], Module, Acc) ->
+	Func = codegen:gen_function('sherif_$_type_$_generic_$', 
+		fun(Val, Type) when is_atom(Type) ->
+			TypeFunc = list_to_atom("sheriff_$_type_$_" ++ atom_to_list(Type)),
+			{'$var', Module}:TypeFunc(Val);
+		(Val, Type) when is_list(Type) ->
+			{ModulePart, TypePart} = try
+				fun(Type) ->
+					[ModulePart, TypePart] = string:tokens(Type, ":"),
+					[TypeString, ")"] = string:tokens(TypePart, "("),
+					{ModulePart, TypeString}
+				end(Type)
+			catch error:{badmatch, _} ->
+				error(badarg)
+			end,
+			ModuleAtom = list_to_atom(ModulePart),
+			TypeAtom = list_to_atom(TypePart),
+			'sherif_$_type_$_generic_$'(Val, {ModuleAtom, TypeAtom});
+		(Val, {ModuleAtom, TypeAtom}) ->
+			TypeFunc = list_to_atom("sheriff_$_type_$_" ++ atom_to_list(TypeAtom)),
+			ModuleAtom:TypeFunc(Val)
+		end),
+	[Func | Acc];
 gen_check_funcs([{{record, Name}, Tree, []}|Tail], Module, Acc) ->
 	FuncName = record_to_func_name(Name),
 	Value = {var, 0, 'Sheriff_check_value'},
@@ -447,6 +468,10 @@ replace_calls(application, Form, _Ctx, ThisModule) ->
 			Vars = [hd(Args)],
 			[CheckVar, TypeVar] = parse_trans:revert(Args),
 			Form2 = case TypeVar of
+				{var, _, _} ->
+					erl_syntax:application(
+						erl_syntax:atom('sherif_$_type_$_generic_$'), 
+						Args); 
 				{string, _, String} ->
 					{ok, Ts, _} = erl_scan:string(
 						"-type sheriff_string_arg() :: " ++ String ++ "."),
