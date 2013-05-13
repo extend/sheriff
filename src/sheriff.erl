@@ -237,7 +237,7 @@ build_type({type, _, list, []}, _, Value) ->
 	end),
 	Exprs;
 build_type({type, L, list, Types}, Module, Value) ->
-	LCValue = {var, L, 'L'},
+	LCValue = {var, L, unique_name()},
 	InExprs = build_union(build_exprs(Types, Module, LCValue)),
 	[Exprs] = codegen:exprs(fun() ->
 		is_list({'$form', Value}) andalso
@@ -282,7 +282,7 @@ build_type({type, _, nonempty_list, []}, _, Value) ->
 	end),
 	Exprs;
 build_type({type, L, nonempty_list, Types}, Module, Value) ->
-	LCValue = {var, L, 'L'},
+	LCValue = {var, L, unique_name()},
 	InExprs = build_union(build_exprs(Types, Module, LCValue)),
 	[Exprs] = codegen:exprs(fun() ->
 		is_list({'$form', Value}) andalso
@@ -499,3 +499,6 @@ type_to_func_name(Type) when is_atom(Type) ->
 
 record_to_func_name(Record) when is_atom(Record) ->
 	list_to_atom("sheriff_$_record_$_" ++ atom_to_list(Record)).
+
+unique_name() ->
+	list_to_atom(lists:flatten(io_lib:format("sheriff_$_name_$_~b_~b_~b", tuple_to_list(erlang:now())))).
