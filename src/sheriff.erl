@@ -151,6 +151,25 @@ build_type(Expr = {integer, _, _}, _, Value) ->
 	build_identity(Expr, Value);
 build_type(Expr = {op, _, '-', {integer, _, _}}, _, Value) ->
 	build_identity(Expr, Value);
+build_type({remote_type, L, [{atom, _, calendar}, {atom, _, datetime}, _]},
+		_, Value) ->
+	% Handle calendar:datetime as nested tuples matching the official
+	% declaration in all its glory.
+	build_type({type, L, tuple, [
+			{type, L, tuple, [
+				{type, L, non_neg_integer, []},
+				{type, L, range, [{integer, L, 1},
+						  {integer, L, 12}]},
+				{type, L, range, [{integer, L, 1},
+						  {integer, L, 31}]}]},
+			{type, L, tuple, [
+				{type, L, range, [{integer, L, 0},
+					          {integer, L, 23}]},
+				{type, L, range, [{integer, L, 0},
+						  {integer, L, 59}]},
+				{type, L, range, [{integer, L, 0},
+						  {integer, L, 59}]}]}]},
+		   undefined, Value);
 build_type({remote_type, _, [{atom, _, Module}, {atom, _, Type}, Args]},
 		_, Value) ->
 	FuncName = type_to_func_name(Type),
