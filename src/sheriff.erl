@@ -70,11 +70,9 @@ gen_check_funcs([], Module, Acc) ->
 			{'$var', Module}:TypeFunc(Val);
 		(Val, Type) when is_list(Type) ->
 			{ModulePart, TypePart} = try
-				fun(Type) ->
-					[ModulePart, TypePart] = string:tokens(Type, ":"),
-					[TypeString, ")"] = string:tokens(TypePart, "("),
-					{ModulePart, TypeString}
-				end(Type)
+				[ModulePart2, TypePart2] = string:tokens(Type, ":"),
+				[TypePart3, ")"] = string:tokens(TypePart2, "("),
+				{ModulePart2, TypePart3}
 			catch error:{badmatch, _} ->
 				error(badarg)
 			end,
