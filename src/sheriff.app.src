@@ -19,10 +19,8 @@
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 {application, sheriff, [
-	{id, "Sheriff"},
 	{description, "Parse transform for type based validation."},
-	{sub_description, "Sheriff validates data dynamically "
-		"using Erlang's type system with no extra code required."},
 	{vsn, "0.4.1"},
+	{modules, []},
 	{applications, [kernel, stdlib]}
 ]}.
